@@ -1,10 +1,10 @@
 {
-  "lastUpdated": "2026-01-15T12:00:00.000Z",
+  "lastUpdated": "2026-01-16T00:00:00.000Z",
   "summary": {
-    "total": 85,
-    "done": 67,
+    "total": 88,
+    "done": 88,
     "inProgress": 0,
-    "pending": 18
+    "pending": 0
   },
   "tasks": [
     { "id": "Task-18", "title": "Add config:saved handler to useWebSocket.ts", "status": "done", "completedAt": "2026-01-14T00:00:00.000Z" },
@@ -71,19 +71,28 @@
     { "id": "Task-80", "title": "Add error logging to capture spawn failures with details", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
     { "id": "Task-81", "title": "Test launcher instance spawning on Windows", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
     { "id": "Task-82", "title": "Add instance health check before marking as started", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
-    { "id": "Task-83", "title": "Create server endpoint launcher:browse to list directories", "status": "pending", "completedAt": null },
-    { "id": "Task-84", "title": "Create FileBrowser.tsx component with folder navigation", "status": "pending", "completedAt": null },
-    { "id": "Task-85", "title": "Add FileBrowser to AddProjectDialog.tsx", "status": "pending", "completedAt": null },
-    { "id": "Task-86", "title": "Handle Windows drive letters in file browser", "status": "pending", "completedAt": null },
-    { "id": "Task-87", "title": "Add breadcrumb navigation in file browser", "status": "pending", "completedAt": null },
-    { "id": "Task-88", "title": "Filter to show only directories (not files)", "status": "pending", "completedAt": null },
-    { "id": "Task-89", "title": "Highlight directories that are git repos or Ralph-ready", "status": "pending", "completedAt": null },
-    { "id": "Task-90", "title": "Implement createReview() in src/lib/llm-review.ts", "status": "pending", "completedAt": null },
-    { "id": "Task-91", "title": "Add ReviewConfig and ReviewResult types to types/index.ts", "status": "pending", "completedAt": null },
-    { "id": "Task-92", "title": "Create review criteria templates for UI tasks", "status": "pending", "completedAt": null },
-    { "id": "Task-93", "title": "Add post-task review step to loop.sh", "status": "pending", "completedAt": null },
-    { "id": "Task-94", "title": "Integrate screenshot capture for visual reviews", "status": "pending", "completedAt": null },
-    { "id": "Task-95", "title": "Add review:run WebSocket handler to server/index.ts", "status": "pending", "completedAt": null },
-    { "id": "Task-96", "title": "Create ReviewPanel.tsx component", "status": "pending", "completedAt": null }
+    { "id": "Task-83", "title": "Create server endpoint launcher:browse to list directories", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-84", "title": "Create FileBrowser.tsx component with folder navigation", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-85", "title": "Add FileBrowser to AddProjectDialog.tsx", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-86", "title": "Handle Windows drive letters in file browser", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-87", "title": "Add breadcrumb navigation in file browser", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-88", "title": "Filter to show only directories (not files)", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-89", "title": "Highlight directories that are git repos or Ralph-ready", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-90", "title": "Implement createReview() in server/reviewRunner.ts using Claude CLI", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-91", "title": "Add ReviewConfig and ReviewResult types to types/index.ts", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-92", "title": "Create review criteria templates for UI tasks in PROMPT_build.md", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-93", "title": "Add post-task review step to loop.sh before marking task complete", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-94", "title": "Integrate screenshot capture for visual reviews (optional - hook point added)", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-95", "title": "Add review:run WebSocket handler to server/index.ts", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-96", "title": "Create ReviewPanel.tsx component to display review results in dashboard", "status": "done", "completedAt": "2026-01-16T00:00:00.000Z" },
+    { "id": "Task-97", "title": "Create PROMPT_review.md with verification and discovery phases", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-98", "title": "Add review mode handling to loop.sh", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-99", "title": "Create reviewGenerator.ts server module", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-100", "title": "Add ReviewMode type and REVIEW_REPORT types to types/index.ts", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-101", "title": "Create ReviewGenerator.tsx component for dashboard", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-102", "title": "Add Review tab to Dashboard.tsx", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-103", "title": "Wire up WebSocket handlers for review-generator messages", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-104", "title": "Add quick scan mode (TODOs/FIXMEs only)", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-105", "title": "Add spec-focused review mode", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" }
   ]
 }

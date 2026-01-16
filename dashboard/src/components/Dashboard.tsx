@@ -11,6 +11,7 @@ import { OnboardingWizard } from './setup/OnboardingWizard';
 import { PlanGenerator } from './PlanGenerator';
 import { PRDGenerator } from './PRDGenerator';
 import { ReviewGenerator } from './ReviewGenerator';
+import { ReviewPanel } from './ReviewPanel';
 import { ExistingDocsViewer } from './ExistingDocsViewer';
 import { WorkflowModeToggle } from './WorkflowModeToggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,6 +28,7 @@ import {
   Github,
   FileSearch,
   Home,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -106,6 +108,13 @@ export function Dashboard({ backendPort }: DashboardProps) {
     generateReview,
     cancelReviewGenerator,
     clearReviewGeneratorOutput,
+    // Review runner (Feature Set 13 - LLM-as-Judge)
+    reviewRunnerStatus,
+    reviewRunnerOutput,
+    reviewRunnerResult,
+    reviewRunnerError,
+    runReview,
+    cancelReview,
     // Workflow mode
     workflowMode,
     setWorkflowMode,
@@ -113,7 +122,7 @@ export function Dashboard({ backendPort }: DashboardProps) {
   } = useWebSocket(wsUrl);
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [generateSubTab, setGenerateSubTab] = useState<'plan' | 'review' | 'prd'>('plan');
+  const [generateSubTab, setGenerateSubTab] = useState<'plan' | 'review' | 'quality' | 'prd'>('plan');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
 
@@ -308,8 +317,8 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
           {/* Generate Tab */}
           <TabsContent value="generate">
-            <Tabs value={generateSubTab} onValueChange={(v) => setGenerateSubTab(v as 'plan' | 'review' | 'prd')} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+            <Tabs value={generateSubTab} onValueChange={(v) => setGenerateSubTab(v as 'plan' | 'review' | 'quality' | 'prd')} className="space-y-4">
+              <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
                 <TabsTrigger value="plan" className="gap-2">
                   <ListTodo className="h-4 w-4" />
                   Implementation Plan
@@ -317,6 +326,10 @@ export function Dashboard({ backendPort }: DashboardProps) {
                 <TabsTrigger value="review" className="gap-2">
                   <FileSearch className="h-4 w-4" />
                   Code Review
+                </TabsTrigger>
+                <TabsTrigger value="quality" className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Quality Review
                 </TabsTrigger>
                 <TabsTrigger value="prd" className="gap-2">
                   <FileText className="h-4 w-4" />
@@ -359,6 +372,17 @@ export function Dashboard({ backendPort }: DashboardProps) {
                       payload: { file: 'REVIEW_REPORT.md', content },
                     })
                   }
+                />
+              </TabsContent>
+
+              <TabsContent value="quality">
+                <ReviewPanel
+                  status={reviewRunnerStatus}
+                  output={reviewRunnerOutput}
+                  result={reviewRunnerResult}
+                  error={reviewRunnerError}
+                  onRunReview={runReview}
+                  onCancel={cancelReview}
                 />
               </TabsContent>
 

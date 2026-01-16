@@ -352,6 +352,7 @@ export type ServerMessage =
   | ReviewOutputMessage
   | ReviewCompleteMessage
   | ReviewErrorMessage
+  | ReviewCancelledMessage
   | ReviewGeneratorStatusMessage
   | ReviewGeneratorOutputMessage
   | ReviewGeneratorCompleteMessage
@@ -992,6 +993,10 @@ export interface ReviewCompleteMessage extends WSMessage {
 export interface ReviewErrorMessage extends WSMessage {
   type: 'review:error';
   payload: { error: string };
+}
+
+export interface ReviewCancelledMessage extends WSMessage {
+  type: 'review:cancelled';
 }
 
 // ============================================================================

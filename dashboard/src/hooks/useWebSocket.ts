@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode } from '@/types';
+import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode, ReviewRunnerStatus, ReviewConfig, ReviewResult } from '@/types';
 
 interface UseWebSocketReturn {
   connected: boolean;
@@ -83,6 +83,15 @@ interface UseWebSocketReturn {
   generateReview: (options: { mode: ReviewGeneratorMode; focusArea?: string; specFile?: string }) => void;
   cancelReviewGenerator: () => void;
   clearReviewGeneratorOutput: () => void;
+  // Review runner state (Feature Set 13 - LLM-as-Judge)
+  reviewRunnerStatus: ReviewRunnerStatus;
+  reviewRunnerOutput: string;
+  reviewRunnerResult: ReviewResult | null;
+  reviewRunnerError: string | null;
+  // Review runner handlers
+  runReview: (config: ReviewConfig) => void;
+  cancelReview: () => void;
+  clearReviewOutput: () => void;
   // Workflow mode state and handlers
   workflowMode: WorkflowMode;
   setWorkflowMode: (mode: WorkflowMode) => void;
@@ -124,6 +133,11 @@ const DEFAULT_PRD_STATUS: PRDGeneratorStatus = {
 const DEFAULT_REVIEW_GENERATOR_STATUS: ReviewGeneratorStatus = {
   generating: false,
   mode: null,
+  startedAt: null,
+};
+
+const DEFAULT_REVIEW_RUNNER_STATUS: ReviewRunnerStatus = {
+  running: false,
   startedAt: null,
 };
 
@@ -182,6 +196,11 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
   const [reviewGeneratorOutput, setReviewGeneratorOutput] = useState('');
   const [reviewGeneratorComplete, setReviewGeneratorComplete] = useState<{ report: string; output: string } | null>(null);
   const [reviewGeneratorError, setReviewGeneratorError] = useState<string | null>(null);
+  // Review runner state (Feature Set 13 - LLM-as-Judge)
+  const [reviewRunnerStatus, setReviewRunnerStatus] = useState<ReviewRunnerStatus>(DEFAULT_REVIEW_RUNNER_STATUS);
+  const [reviewRunnerOutput, setReviewRunnerOutput] = useState('');
+  const [reviewRunnerResult, setReviewRunnerResult] = useState<ReviewResult | null>(null);
+  const [reviewRunnerError, setReviewRunnerError] = useState<string | null>(null);
   // Workflow mode state
   const [workflowMode, setWorkflowModeState] = useState<WorkflowMode>('simple');
 
@@ -423,6 +442,28 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
           case 'review-generator:error':
             setReviewGeneratorError(message.payload.error);
             break;
+          // Review runner messages (Feature Set 13 - LLM-as-Judge)
+          case 'review:status':
+            setReviewRunnerStatus(message.payload);
+            if (message.payload.running) {
+              // Clear previous results when starting new review
+              setReviewRunnerOutput('');
+              setReviewRunnerResult(null);
+              setReviewRunnerError(null);
+            }
+            break;
+          case 'review:output':
+            setReviewRunnerOutput((prev) => prev + message.payload.text);
+            break;
+          case 'review:complete':
+            setReviewRunnerResult(message.payload);
+            break;
+          case 'review:error':
+            setReviewRunnerError(message.payload.error);
+            break;
+          case 'review:cancelled':
+            setReviewRunnerStatus(DEFAULT_REVIEW_RUNNER_STATUS);
+            break;
           // Workflow mode messages
           case 'mode:current':
             if (message.payload?.mode) {
@@ -505,6 +546,28 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     setReviewGeneratorOutput('');
     setReviewGeneratorComplete(null);
     setReviewGeneratorError(null);
+  }, []);
+
+  // Review runner handlers (Feature Set 13 - LLM-as-Judge)
+  const runReview = useCallback((config: ReviewConfig) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'review:run',
+        payload: config,
+      }));
+    }
+  }, []);
+
+  const cancelReview = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'review:cancel' }));
+    }
+  }, []);
+
+  const clearReviewOutput = useCallback(() => {
+    setReviewRunnerOutput('');
+    setReviewRunnerResult(null);
+    setReviewRunnerError(null);
   }, []);
 
   const scanProject = useCallback(() => {
@@ -702,6 +765,14 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     generateReview,
     cancelReviewGenerator,
     clearReviewGeneratorOutput,
+    // Review runner (Feature Set 13 - LLM-as-Judge)
+    reviewRunnerStatus,
+    reviewRunnerOutput,
+    reviewRunnerResult,
+    reviewRunnerError,
+    runReview,
+    cancelReview,
+    clearReviewOutput,
     // Workflow mode
     workflowMode,
     setWorkflowMode,
