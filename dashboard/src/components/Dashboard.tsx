@@ -14,6 +14,7 @@ import { ReviewGenerator } from './ReviewGenerator';
 import { ReviewPanel } from './ReviewPanel';
 import { ExistingDocsViewer } from './ExistingDocsViewer';
 import { WorkflowModeToggle } from './WorkflowModeToggle';
+import { PortsTab } from './PortsTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -29,6 +30,7 @@ import {
   FileSearch,
   Home,
   Sparkles,
+  Server,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -119,6 +121,12 @@ export function Dashboard({ backendPort }: DashboardProps) {
     workflowMode,
     setWorkflowMode,
     getWorkflowMode,
+    // Port management
+    portProcesses,
+    portsLoading,
+    portsError,
+    scanPorts,
+    killPort,
   } = useWebSocket(wsUrl);
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -248,7 +256,7 @@ export function Dashboard({ backendPort }: DashboardProps) {
       {/* Main Content */}
       <div className="container mx-auto p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+          <TabsList className="grid w-full grid-cols-5 lg:w-[625px]">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
@@ -256,6 +264,10 @@ export function Dashboard({ backendPort }: DashboardProps) {
             <TabsTrigger value="generate" className="gap-2">
               <Wand2 className="h-4 w-4" />
               Generate
+            </TabsTrigger>
+            <TabsTrigger value="ports" className="gap-2">
+              <Server className="h-4 w-4" />
+              Ports
             </TabsTrigger>
             <TabsTrigger value="logs" className="gap-2">
               <Terminal className="h-4 w-4" />
@@ -417,6 +429,17 @@ export function Dashboard({ backendPort }: DashboardProps) {
                 />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          {/* Ports Tab */}
+          <TabsContent value="ports">
+            <PortsTab
+              portProcesses={portProcesses}
+              portsLoading={portsLoading}
+              portsError={portsError}
+              onScanPorts={scanPorts}
+              onKillPort={killPort}
+            />
           </TabsContent>
 
           {/* Logs Tab */}

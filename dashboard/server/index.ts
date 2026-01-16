@@ -19,6 +19,7 @@ import { ProjectDiscovery } from './projectDiscovery.js';
 import { ReviewRunner } from './reviewRunner.js';
 import { ReviewGenerator } from './reviewGenerator.js';
 import { TemplateManager, type TemplateName } from './templateManager.js';
+import { scanPorts, killProcess } from './portScanner.js';
 import { RalphDatabase } from './database/index.js';
 import { getSessionRepository } from './database/repositories/SessionRepository.js';
 import { getHealthMonitor } from './healthMonitor.js';
@@ -760,6 +761,56 @@ ${audienceContent}
                   success: false,
                   message: error instanceof Error ? error.message : 'Unknown error',
                 },
+              }));
+            }
+            break;
+          }
+
+          // ============================================
+          // Port Management WebSocket Handlers
+          // ============================================
+          case 'ports:scan': {
+            try {
+              const processes = await scanPorts();
+              ws.send(JSON.stringify({
+                type: 'ports:list',
+                payload: processes,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'ports:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to scan ports' },
+              }));
+            }
+            break;
+          }
+
+          case 'ports:kill': {
+            try {
+              const { pid } = message.payload as { pid: number };
+              const result = await killProcess(pid);
+              
+              if (result.success) {
+                ws.send(JSON.stringify({
+                  type: 'ports:killed',
+                  payload: { pid, success: true },
+                }));
+                // Send updated port list after killing
+                const processes = await scanPorts();
+                ws.send(JSON.stringify({
+                  type: 'ports:list',
+                  payload: processes,
+                }));
+              } else {
+                ws.send(JSON.stringify({
+                  type: 'ports:error',
+                  payload: { error: result.error || 'Failed to kill process' },
+                }));
+              }
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'ports:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to kill process' },
               }));
             }
             break;

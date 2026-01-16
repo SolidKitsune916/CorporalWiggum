@@ -361,7 +361,10 @@ export type ServerMessage =
   | SessionNoneMessage
   | SessionErrorMessage
   | ModeCurrentMessage
-  | ModeUpdatedMessage;
+  | ModeUpdatedMessage
+  | PortsListMessage
+  | PortsKilledMessage
+  | PortsErrorMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -729,7 +732,9 @@ export type ClientCommand =
   | GenerateReviewCommand
   | CancelReviewGeneratorCommand
   | ModeGetCommand
-  | ModeSetCommand;
+  | ModeSetCommand
+  | PortsScanCommand
+  | PortsKillCommand;
 
 // Workflow mode commands
 export interface ModeGetCommand {
@@ -1089,4 +1094,54 @@ export interface ReviewGeneratorCompleteMessage extends WSMessage {
 export interface ReviewGeneratorErrorMessage extends WSMessage {
   type: 'review-generator:error';
   payload: { error: string };
+}
+
+// ============================================================================
+// Port Management Types (Feature Set: Ports Tab)
+// ============================================================================
+
+// A process using a network port
+export interface PortProcess {
+  pid: number;
+  name: string;
+  port: number;
+  protocol: 'TCP' | 'UDP';
+  state: string;
+  user: string;
+}
+
+// Port scan WebSocket command
+export interface PortsScanCommand {
+  type: 'ports:scan';
+}
+
+// Port kill WebSocket command
+export interface PortsKillCommand {
+  type: 'ports:kill';
+  payload: {
+    pid: number;
+  };
+}
+
+// Port list WebSocket message (response to scan)
+export interface PortsListMessage extends WSMessage {
+  type: 'ports:list';
+  payload: PortProcess[];
+}
+
+// Port killed WebSocket message (response to kill)
+export interface PortsKilledMessage extends WSMessage {
+  type: 'ports:killed';
+  payload: {
+    pid: number;
+    success: boolean;
+  };
+}
+
+// Port error WebSocket message
+export interface PortsErrorMessage extends WSMessage {
+  type: 'ports:error';
+  payload: {
+    error: string;
+  };
 }

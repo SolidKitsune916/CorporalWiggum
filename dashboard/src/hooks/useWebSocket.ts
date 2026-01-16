@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode, ReviewRunnerStatus, ReviewConfig, ReviewResult } from '@/types';
+import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode, ReviewRunnerStatus, ReviewConfig, ReviewResult, PortProcess } from '@/types';
 
 interface UseWebSocketReturn {
   connected: boolean;
@@ -96,6 +96,12 @@ interface UseWebSocketReturn {
   workflowMode: WorkflowMode;
   setWorkflowMode: (mode: WorkflowMode) => void;
   getWorkflowMode: () => void;
+  // Port management state and handlers
+  portProcesses: PortProcess[];
+  portsLoading: boolean;
+  portsError: string | null;
+  scanPorts: () => void;
+  killPort: (pid: number) => void;
 }
 
 const DEFAULT_LOOP_STATUS: LoopStatus = {
@@ -203,6 +209,10 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
   const [reviewRunnerError, setReviewRunnerError] = useState<string | null>(null);
   // Workflow mode state
   const [workflowMode, setWorkflowModeState] = useState<WorkflowMode>('simple');
+  // Port management state
+  const [portProcesses, setPortProcesses] = useState<PortProcess[]>([]);
+  const [portsLoading, setPortsLoading] = useState(false);
+  const [portsError, setPortsError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -475,6 +485,19 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
               setWorkflowModeState(message.payload.mode as WorkflowMode);
             }
             break;
+          // Port management messages
+          case 'ports:list':
+            setPortProcesses(message.payload as PortProcess[]);
+            setPortsLoading(false);
+            setPortsError(null);
+            break;
+          case 'ports:killed':
+            // Port list will be automatically sent after kill, so no need to update state here
+            break;
+          case 'ports:error':
+            setPortsError((message.payload as { error: string }).error);
+            setPortsLoading(false);
+            break;
         }
       } catch {
         console.error('Failed to parse WebSocket message');
@@ -695,6 +718,21 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     }
   }, []);
 
+  // Port management handlers
+  const scanPorts = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setPortsLoading(true);
+      setPortsError(null);
+      wsRef.current.send(JSON.stringify({ type: 'ports:scan' }));
+    }
+  }, []);
+
+  const killPort = useCallback((pid: number) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'ports:kill', payload: { pid } }));
+    }
+  }, []);
+
   return {
     connected,
     loopStatus,
@@ -777,5 +815,11 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     workflowMode,
     setWorkflowMode,
     getWorkflowMode,
+    // Port management
+    portProcesses,
+    portsLoading,
+    portsError,
+    scanPorts,
+    killPort,
   };
 }
