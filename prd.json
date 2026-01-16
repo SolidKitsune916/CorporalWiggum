@@ -119,8 +119,8 @@
         "No unhandled message types in server logs"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": "Verify WebSocket communication works"
+      "passes": true,
+      "notes": "Verified: All handlers in server/index.ts switch block, silent fallthrough for unknown types"
     },
     {
       "id": "US-010",
@@ -133,8 +133,8 @@
         "TemplateManager.initializeProject creates files correctly"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": "Verify template system works"
+      "passes": true,
+      "notes": "Verified: templateManager.ts has valid templates for all files, initializeProject creates correctly"
     },
     {
       "id": "US-011",
@@ -146,8 +146,8 @@
         "Tasks emit to dashboard via WebSocket"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": "Verify FileWatcher handles both modes"
+      "passes": true,
+      "notes": "Verified: FileWatcher.parsePrdJsonTasks/parseImplementationPlanTasks, emits 'tasks' event"
     },
     {
       "id": "US-012",
@@ -159,8 +159,8 @@
         "No unused variable warnings in modified files"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": "Final TypeScript cleanup"
+      "passes": true,
+      "notes": "Verified: npx tsc --noEmit passes with no errors"
     },
     {
       "id": "US-013",
@@ -172,8 +172,8 @@
         "README.md exists and describes the project"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": "Ensure documentation matches implementation"
+      "passes": true,
+      "notes": "Verified: README.md + docs/user-guide/dashboard-overview.md cover modes, AGENTS.md correct, progress.txt has learnings"
     },
     {
       "id": "US-014",
@@ -187,8 +187,8 @@
         "All previous stories pass"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": "Final verification that everything works together"
+      "passes": true,
+      "notes": "All 13 previous stories verified and passing - full verification complete"
     }
   ]
 }

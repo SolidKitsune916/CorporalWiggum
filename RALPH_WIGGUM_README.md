@@ -133,6 +133,61 @@ chmod +x loop.sh
 
 ---
 
+## Workflow Modes
+
+Ralph Wiggum supports two workflow modes, configurable via the dashboard or `.ralph-mode` file:
+
+### Simple Mode (Recommended for New Users)
+
+Uses `prd.json` for task tracking with user stories:
+
+- **Task File**: `prd.json` - JSON with user stories and acceptance criteria
+- **Progress Log**: `progress.txt` - Learnings and patterns discovered
+- **Prompt**: `PROMPT_simple.md`
+- **Best For**: MVPs, feature development, smaller projects
+
+```json
+// prd.json example
+{
+  "branchName": "ralph/feature",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add user authentication",
+      "passes": false
+    }
+  ]
+}
+```
+
+### Advanced Mode
+
+Uses `IMPLEMENTATION_PLAN.md` for detailed task tracking:
+
+- **Task File**: `IMPLEMENTATION_PLAN.md` - Markdown checkboxes
+- **Planning**: Full PRD and specs workflow
+- **Prompt**: `PROMPT_build.md`
+- **Best For**: Complex systems, enterprise projects
+
+```markdown
+## Current Tasks
+- [ ] Implement user model
+- [x] Set up database schema
+```
+
+### Switching Modes
+
+1. **Via Dashboard**: Use the mode toggle in the header (Zap = Simple, Rocket = Advanced)
+2. **Via File**: Create `.ralph-mode` containing `simple` or `advanced`
+3. **Via Onboarding**: Select mode during initial setup
+
+The mode affects:
+- Which files `loop.sh` reads for task counting
+- Which prompt template is used in build mode
+- How the dashboard TaskList displays tasks
+
+---
+
 ## Project Structure
 
 ### Core Files (Required)
