@@ -51,8 +51,8 @@
         ".ralph-mode file is updated when mode changes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": "Verify the mode toggle feature we implemented"
+      "passes": true,
+      "notes": "Verified: WorkflowModeToggle in Dashboard.tsx, mode:set handler writes .ralph-mode"
     },
     {
       "id": "US-005",

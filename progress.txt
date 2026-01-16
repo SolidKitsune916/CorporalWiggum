@@ -49,6 +49,16 @@ Entries are append-only - never delete, only add.
 ---
 
 ---
+[2026-01-16] US-004 - Workflow mode toggle displays and functions
+- What was verified: WorkflowModeToggle component and mode persistence
+- Files checked: WorkflowModeToggle.tsx, Dashboard.tsx, useWebSocket.ts, server/index.ts
+- **Learnings:**
+  - WorkflowModeToggle uses Zap icon for Simple, Rocket icon for Advanced
+  - setWorkflowMode sends WebSocket message mode:set which writes to .ralph-mode
+  - mode:set handler also auto-creates missing files (prd.json, progress.txt, or IMPLEMENTATION_PLAN.md)
+---
+
+---
 [2026-01-15] Project Initialized
 - Pattern: Created complete Ralph Wiggum documentation suite
 - Tip: Start with AUDIENCE_JTBD.md to ground all specs in user needs
