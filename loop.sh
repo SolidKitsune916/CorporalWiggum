@@ -240,16 +240,20 @@ check_iteration_health() {
     local ts_errors build_errors test_failures general_errors
 
     # TypeScript errors (TS followed by digits)
-    ts_errors=$(echo "$recent_output" | grep -cE "TS[0-9]+:" 2>/dev/null || echo 0)
+    ts_errors=$(echo "$recent_output" | grep -cE "TS[0-9]+:" 2>/dev/null)
+    ts_errors="${ts_errors:-0}"
 
     # Build/compile errors
-    build_errors=$(echo "$recent_output" | grep -ciE "(error:|Error:|ERROR|ENOENT|Cannot find|Module not found)" 2>/dev/null || echo 0)
+    build_errors=$(echo "$recent_output" | grep -ciE "(error:|Error:|ERROR|ENOENT|Cannot find|Module not found)" 2>/dev/null)
+    build_errors="${build_errors:-0}"
 
     # Test failures
-    test_failures=$(echo "$recent_output" | grep -ciE "(FAIL|failed|✗|✖)" 2>/dev/null || echo 0)
+    test_failures=$(echo "$recent_output" | grep -ciE "(FAIL|failed|✗|✖)" 2>/dev/null)
+    test_failures="${test_failures:-0}"
 
     # General errors (excluding false positives)
-    general_errors=$(echo "$recent_output" | grep -ciE "^error" 2>/dev/null || echo 0)
+    general_errors=$(echo "$recent_output" | grep -ciE "^error" 2>/dev/null)
+    general_errors="${general_errors:-0}"
 
     error_count=$((ts_errors + build_errors + test_failures + general_errors))
 
@@ -279,8 +283,9 @@ count_completed_tasks() {
             return
         fi
         local count
-        count=$(grep -c '"passes": true' "prd.json" 2>/dev/null || echo 0)
-        echo "$count"
+        count=$(grep -c '"passes": true' "prd.json" 2>/dev/null)
+        # grep -c returns 1 when no matches, so default to 0 if empty
+        echo "${count:-0}"
     else
         # Advanced mode: count checked boxes in IMPLEMENTATION_PLAN.md
         local plan_file="IMPLEMENTATION_PLAN.md"
@@ -289,8 +294,8 @@ count_completed_tasks() {
             return
         fi
         local count
-        count=$(grep -cE "^\s*-\s*\[x\]|^\s*-\s*\[X\]" "$plan_file" 2>/dev/null || echo 0)
-        echo "$count"
+        count=$(grep -cE "^\s*-\s*\[x\]|^\s*-\s*\[X\]" "$plan_file" 2>/dev/null)
+        echo "${count:-0}"
     fi
 }
 
@@ -303,8 +308,9 @@ count_incomplete_tasks() {
             return
         fi
         local count
-        count=$(grep -c '"passes": false' "prd.json" 2>/dev/null || echo 0)
-        echo "$count"
+        count=$(grep -c '"passes": false' "prd.json" 2>/dev/null)
+        # grep -c returns 1 when no matches, so default to 0 if empty
+        echo "${count:-0}"
     else
         # Advanced mode: count unchecked boxes in IMPLEMENTATION_PLAN.md
         local plan_file="IMPLEMENTATION_PLAN.md"
@@ -313,8 +319,8 @@ count_incomplete_tasks() {
             return
         fi
         local count
-        count=$(grep -cE "^\s*-\s*\[ \]" "$plan_file" 2>/dev/null || echo 0)
-        echo "$count"
+        count=$(grep -cE "^\s*-\s*\[ \]" "$plan_file" 2>/dev/null)
+        echo "${count:-0}"
     fi
 }
 
