@@ -18,6 +18,16 @@ Entries are append-only - never delete, only add.
 ---
 
 ---
+[2026-01-16] US-001 - Dashboard builds without errors
+- What was implemented: Verified dashboard build process
+- Files checked: dashboard package.json, TypeScript config
+- **Learnings:**
+  - npm install shows 7 moderate vulnerabilities but doesn't block builds
+  - tsc --noEmit passes cleanly with no TypeScript errors
+  - Vite build produces ~500KB JS bundle (143KB gzipped)
+---
+
+---
 [2026-01-15] Project Initialized
 - Pattern: Created complete Ralph Wiggum documentation suite
 - Tip: Start with AUDIENCE_JTBD.md to ground all specs in user needs
