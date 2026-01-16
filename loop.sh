@@ -73,7 +73,14 @@ elif [ "$1" = "validate" ]; then
     MAX_ITERATIONS=${2:-1}  # Default 1 iteration for validation
 elif [[ "${1:-}" =~ ^[0-9]+$ ]]; then
     # Build mode with max iterations
+    MODE="build"
     MAX_ITERATIONS=$1
+    # Use workflow mode to select prompt
+    if [ "$WORKFLOW_MODE" = "simple" ]; then
+        PROMPT_FILE="PROMPT_simple.md"
+    else
+        PROMPT_FILE="PROMPT_build.md"
+    fi
 elif [ "${1:-}" = "build" ]; then
     # Explicit build mode
     MODE="build"
