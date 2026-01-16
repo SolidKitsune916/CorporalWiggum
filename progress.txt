@@ -59,6 +59,16 @@ Entries are append-only - never delete, only add.
 ---
 
 ---
+[2026-01-16] US-005 - TaskList displays correctly for each workflow mode
+- What was verified: TaskList component and FileWatcher task parsing
+- Files checked: TaskList.tsx, fileWatcher.ts
+- **Learnings:**
+  - TaskList adapts title (User Stories/Implementation Plan) and icon (Zap/Rocket) based on mode
+  - FileWatcher.parseTasks() routes to parsePrdJsonTasks() or parseImplementationPlanTasks()
+  - Completed tasks get CheckCircle2 icon with text-green-500 styling
+---
+
+---
 [2026-01-15] Project Initialized
 - Pattern: Created complete Ralph Wiggum documentation suite
 - Tip: Start with AUDIENCE_JTBD.md to ground all specs in user needs

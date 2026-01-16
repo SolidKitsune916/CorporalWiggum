@@ -65,8 +65,8 @@
         "Completed tasks show green checkmark"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "Verify TaskList adapts to workflow mode"
+      "passes": true,
+      "notes": "Verified: TaskList.tsx adapts title/icon, FileWatcher routes to correct parser"
     },
     {
       "id": "US-006",
@@ -79,8 +79,8 @@
         "Task counting works for both prd.json and IMPLEMENTATION_PLAN.md"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": "Verify bash loop respects mode setting"
+      "passes": true,
+      "notes": "Verified: loop.sh reads .ralph-mode, routes to correct prompt, counts tasks for both modes"
     },
     {
       "id": "US-007",
