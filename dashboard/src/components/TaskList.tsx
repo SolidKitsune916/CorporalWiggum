@@ -1,106 +1,91 @@
-import type { Task } from '../types';
-import { CheckCircle, Circle, Clock, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import type { TasksState, WorkflowMode } from '@/types';
+import { ListTodo, CheckCircle2, Circle, Zap, Rocket } from 'lucide-react';
 
 interface TaskListProps {
-  tasks: Task[];
+  tasks: TasksState;
+  workflowMode?: WorkflowMode;
 }
 
-export function TaskList({ tasks }: TaskListProps) {
-  const completedCount = tasks.filter((t) => t.status === 'completed').length;
-  const totalCount = tasks.length;
-  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-
-  const getStatusIcon = (status: Task['status']) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'in_progress':
-        return <Clock className="h-4 w-4 text-blue-500 animate-pulse" />;
-      case 'failed':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <Circle className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getPriorityBadge = (priority: number) => {
-    const colors: Record<number, string> = {
-      1: 'bg-red-500/10 text-red-500',
-      2: 'bg-yellow-500/10 text-yellow-500',
-      3: 'bg-blue-500/10 text-blue-500',
-    };
-    return (
-      <span
-        className={`px-1.5 py-0.5 text-xs rounded ${colors[priority] || 'bg-muted text-muted-foreground'}`}
-      >
-        P{priority}
-      </span>
-    );
-  };
+export function TaskList({ tasks, workflowMode = 'advanced' }: TaskListProps) {
+  const progress = tasks.total > 0 ? (tasks.completed / tasks.total) * 100 : 0;
+  const isSimple = workflowMode === 'simple';
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-foreground">Tasks</h3>
-        <span className="text-sm text-muted-foreground">
-          {completedCount} / {totalCount} complete
-        </span>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="mb-4">
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
+    <Card className="flex flex-col">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2 text-lg">
+            {isSimple ? (
+              <Zap className="h-5 w-5 text-yellow-500" />
+            ) : (
+              <Rocket className="h-5 w-5 text-blue-500" />
+            )}
+            {isSimple ? 'User Stories' : 'Implementation Plan'}
+          </span>
+          <Badge variant="outline">
+            {tasks.completed}/{tasks.total}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 space-y-4">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Progress</span>
+            <span className="font-medium">{Math.round(progress)}%</span>
+          </div>
+          <Progress value={progress} className="h-2" />
         </div>
-      </div>
 
-      {/* Task List */}
-      {tasks.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          No tasks loaded. Run the loop to load tasks from IMPLEMENTATION_PLAN.md
-        </p>
-      ) : (
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className={`flex items-start gap-2 p-2 rounded ${
-                task.status === 'in_progress'
-                  ? 'bg-blue-500/5 border border-blue-500/20'
-                  : task.status === 'completed'
-                    ? 'bg-green-500/5'
-                    : task.status === 'failed'
-                      ? 'bg-red-500/5'
-                      : 'bg-muted/50'
-              }`}
-            >
-              <div className="mt-0.5">{getStatusIcon(task.status)}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+        {tasks.tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+            <ListTodo className="mb-2 h-8 w-8" />
+            <p className="text-sm">No {isSimple ? 'user stories' : 'tasks'} found</p>
+            <p className="text-xs">
+              {isSimple
+                ? 'Add user stories to prd.json'
+                : 'Run planning mode to generate tasks'}
+            </p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[300px] pr-4">
+            <div className="space-y-2">
+              {tasks.tasks.map((task) => (
+                <div
+                  key={task.id}
+                  className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
+                    task.completed
+                      ? 'border-green-500/20 bg-green-500/5'
+                      : 'border-border hover:bg-muted/50'
+                  }`}
+                >
+                  {task.completed ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-500" />
+                  ) : (
+                    <Circle className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                  )}
                   <span
                     className={`text-sm ${
-                      task.status === 'completed'
-                        ? 'line-through text-muted-foreground'
-                        : ''
+                      task.completed ? 'text-muted-foreground line-through' : ''
                     }`}
                   >
-                    {task.title}
+                    {task.content}
                   </span>
-                  {getPriorityBadge(task.priority)}
                 </div>
-                {task.description && (
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {task.description}
-                  </p>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+          </ScrollArea>
+        )}
+
+        {tasks.lastUpdated && (
+          <p className="text-xs text-muted-foreground">
+            Last updated: {new Date(tasks.lastUpdated).toLocaleTimeString()}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

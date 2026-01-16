@@ -1,79 +1,14 @@
-# Ralph Wiggum Plan-Work Mode
+0a. Study `specs/*` with up to 250 parallel Sonnet subagents to learn the application specifications.
+0b. Study @IMPLEMENTATION_PLAN.md (if present) to understand the plan so far.
+0c. Study `src/lib/*` with up to 250 parallel Sonnet subagents to understand shared utilities & components.
+0d. For reference, the application source code is in `src/*`.
 
-You are executing in work-scoped planning mode. Your task is to create a focused implementation plan for the current feature branch.
+1. You are creating a SCOPED implementation plan for work: "${WORK_SCOPE}". Study @IMPLEMENTATION_PLAN.md (if present; it may be incorrect) and use up to 500 Sonnet subagents to study existing source code in `src/*` and compare it against `specs/*`. Use an Opus subagent to analyze findings, prioritize tasks, and create/update @IMPLEMENTATION_PLAN.md as a bullet point list sorted in priority of items yet to be implemented. Ultrathink. Consider searching for TODO, minimal implementations, placeholders, skipped/flaky tests, and inconsistent patterns. Study @IMPLEMENTATION_PLAN.md to determine starting point for research and keep it up to date with items considered complete/incomplete using subagents.
 
-## Branch Safety Check
+For each task in the plan, derive required tests from acceptance criteria in specs - what specific outcomes need verification (behavior, performance, edge cases). Tests verify WHAT works, not HOW it's implemented. Include as part of task definition.
 
-**CRITICAL**: This mode must NOT run on main or master branches.
+When deriving test requirements from acceptance criteria, identify whether verification requires programmatic validation (measurable, inspectable) or human-like judgment (perceptual quality, tone, aesthetics). Both types are equally valid backpressure mechanisms. For subjective criteria that resist programmatic validation, explore src/lib for non-deterministic evaluation patterns.
 
-Verify current branch:
-```bash
-git branch --show-current
-```
+IMPORTANT: This is SCOPED PLANNING for "${WORK_SCOPE}" only. Create a plan containing ONLY tasks directly related to this work scope. Be conservative - if uncertain whether a task belongs to this work, exclude it. The plan can be regenerated if too narrow. Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Treat `src/lib` as the project's standard library for shared utilities and components. Prefer consolidated, idiomatic implementations there over ad-hoc copies.
 
-If on `main` or `master`, STOP and output:
-```
-ERROR: plan-work mode cannot run on protected branches (main/master)
-```
-
-## Phase 1: Branch Context
-
-1. Identify the feature branch name and purpose
-2. Read any branch-specific documentation
-3. Review commits on this branch vs main
-
-```bash
-git log main..HEAD --oneline
-```
-
-## Phase 2: Conservative Scoping
-
-Plan-work mode uses **conservative task scoping**:
-
-- ONLY include tasks directly related to this branch's feature
-- EXCLUDE uncertain or speculative items
-- EXCLUDE refactoring unrelated to the feature
-- KEEP scope minimal and focused
-
-## Phase 3: Generate Focused Plan
-
-Create `IMPLEMENTATION_PLAN.md` with branch-focused tasks:
-
-```markdown
-# Implementation Plan
-
-## Branch: [feature-branch-name]
-## Purpose: [one-line description]
-
-## Tasks for This Branch
-
-### Required
-- [ ] Task essential for feature completion
-- [ ] Task essential for feature completion
-
-### Nice to Have (if time permits)
-- [ ] Optional enhancement
-
-## Out of Scope
-*Items intentionally excluded from this branch*
-- [Item] - will address in separate PR
-- [Item] - not related to this feature
-
-## Definition of Done
-- [ ] All required tasks complete
-- [ ] Tests passing
-- [ ] Ready for PR review
-```
-
-## Conservative Principles
-
-1. When uncertain, EXCLUDE the task
-2. Prefer smaller, focused PRs
-3. Document what's out of scope
-4. Leave refactoring for dedicated branches
-
-## Output
-
-Write the branch-focused `IMPLEMENTATION_PLAN.md` file.
-
-Signal completion by outputting: `WORK_PLAN_GENERATED`
+ULTIMATE GOAL: We want to achieve the scoped work "${WORK_SCOPE}". Consider missing elements related to this work and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md. If you create a new element then document the plan to implement it in @IMPLEMENTATION_PLAN.md using a subagent.

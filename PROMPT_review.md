@@ -1,92 +1,106 @@
-# Ralph Wiggum Review Mode
+0a. Study `specs/*` with up to 500 parallel Sonnet subagents to learn CLAIMED functionality.
+0b. Study @IMPLEMENTATION_PLAN.md to understand CLAIMED completion status.
+0c. Study @AGENTS.md for build/test commands.
+0d. For reference, the application source code is in `src/*`.
 
-You are executing in code review mode. Your task is to analyze the codebase against documentation and identify gaps, issues, and recommendations.
+1. VERIFICATION PHASE: For each item marked complete in @IMPLEMENTATION_PLAN.md, use up to 500 Sonnet subagents to search `src/*` and verify:
+   - Does the implementation exist?
+   - Is it a placeholder/stub or real implementation?
+   - Does it match the acceptance criteria in specs?
+   - Are there TODO/FIXME comments suggesting incompleteness?
 
-## Phase 1: Verification
+2. DISCOVERY PHASE: Search the entire codebase for:
+   - TODO, FIXME, HACK, XXX comments
+   - Empty function bodies or throw-not-implemented patterns
+   - Skipped tests (@skip, .skip, xit, xdescribe)
+   - Dead code (unused exports, unreachable branches)
+   - Missing error handling in critical paths
 
-Compare documentation claims against implementation:
+2.5 FUNCTIONALITY VERIFICATION PHASE: For each UI component:
+   a. List all buttons and clickable elements
+   b. Trace each onClick to its handler implementation
+   c. Verify the handler actually does something meaningful (not empty, not just console.log)
+   d. For WebSocket operations, verify:
+      - The message type is handled on the receiving end
+      - Response handlers exist for success AND error cases
+   e. For state management, verify:
+      - useState variables are both set AND read
+      - Props passed to components are actually used
+   f. Flag any "dead" handlers (empty, placeholder, or log-only)
 
-1. Read `PRD.md` - what features are claimed?
-2. Read `IMPLEMENTATION_PLAN.md` - what tasks are marked complete?
-3. Verify each claim by examining the actual code
+   For each WebSocket message type in the codebase:
+   a. Find all places where it's sent (frontend or backend)
+   b. Find all places where it's handled
+   c. Flag any sent-but-not-handled or handled-but-never-sent patterns
 
-For each claimed feature:
-- Does the implementation exist?
-- Is it complete or partial?
-- Does it match the specification?
+   Run automated check if available: `npx tsx scripts/validate-functionality.ts`
 
-## Phase 2: Discovery
+3. SPEC COMPLIANCE: For each spec in `specs/*`:
+   - List acceptance criteria
+   - Check if tests exist for each criterion
+   - Verify tests pass (run if possible using commands from @AGENTS.md)
+   - Flag any criteria without coverage
 
-Identify undocumented functionality:
-
-1. Scan the codebase for features not in documentation
-2. Check for deprecated or unused code
-3. Identify technical debt
-
-## Phase 3: Health Assessment
-
-Calculate health metrics:
-
-```
-Health Score = (Completed Tasks / Total Tasks) × 100
-```
-
-Assess:
-- Test coverage (are tests comprehensive?)
-- Type safety (any `any` types or missing types?)
-- Code quality (linting issues, code smells?)
-- Documentation accuracy
-
-## Phase 4: Generate Report
-
-Output a structured review:
+4. OUTPUT: Create/update @REVIEW_REPORT.md with the following structure:
 
 ```markdown
-# Code Review Report
+# Review Report
 
-## Summary
-- Health Score: [X]%
-- Features Verified: [N] of [M]
-- Issues Found: [count]
+**Generated**: [ISO timestamp]
+**Mode**: [Full Review | Quick Scan | Spec Focus]
+**Duration**: [X iterations]
 
-## Verification Results
+## Executive Summary
 
-### Implemented ✅
-- Feature 1: Complete and matches spec
-- Feature 2: Complete and matches spec
+| Metric | Count |
+|--------|-------|
+| Tasks claimed complete | X |
+| Actually verified complete | Y |
+| Incomplete/broken | Z |
+| Technical debt items | N |
+| Missing test coverage | M |
 
-### Partial ⚠️
-- Feature 3: Missing [specific functionality]
-- Feature 4: Tests incomplete
+## Health Score: Y/X (percentage%)
 
-### Not Found ❌
-- Feature 5: Claimed but not implemented
+---
 
-## Technical Debt
+## Verified Complete
 
-1. [Issue description] - [severity]
-2. [Issue description] - [severity]
+- [x] Task N: [description] - Evidence: [test passes / code exists / etc.]
+
+## Incomplete Despite Being Marked Done
+
+- [ ] Task N: [description] - ISSUE_TYPE
+  - Details of what's missing or broken
+  - File: [path:line]
+
+## Technical Debt Discovered
+
+| Severity | File | Line | Issue |
+|----------|------|------|-------|
+| High/Medium/Low | path | N | TODO/FIXME/etc. text |
 
 ## Missing Test Coverage
 
-- [Component/feature] lacks tests
-- [Edge case] not covered
+| Spec | Criterion | Status |
+|------|-----------|--------|
+| spec-file.md | acceptance criterion | No test found |
+
+---
 
 ## Recommendations
 
-1. **Priority 1**: [Specific action]
-2. **Priority 2**: [Specific action]
-3. **Priority 3**: [Specific action]
-
-## Discrepancies
-
-| Document | Claims | Actual |
-|----------|--------|--------|
-| PRD.md   | [claim] | [reality] |
+1. **Critical**: [action items]
+2. **High**: [action items]
+3. **Medium**: [action items]
 ```
 
-## Output
+IMPORTANT: Review only. Do NOT fix anything. Do NOT modify code. Output findings ONLY to @REVIEW_REPORT.md.
 
-Generate the review report and output it.
+If validation commands exist in @AGENTS.md, run them and include results in the report:
+- Build status (pass/fail)
+- Test results (pass/fail count)
+- TypeScript errors (count and summary)
+- Lint errors (count and summary)
 
-Signal completion by outputting: `REVIEW_COMPLETE`
+Use an Opus subagent with ultrathink for final analysis and recommendations synthesis.

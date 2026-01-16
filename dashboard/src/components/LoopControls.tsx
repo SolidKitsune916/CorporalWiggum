@@ -1,240 +1,140 @@
 import { useState } from 'react';
-import type { LoopStatus, LoopStartOptions, LoopMode } from '../types';
-import { Play, Square, Settings } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { LoopStatus, LoopMode } from '@/types';
+import { Play, Square, Settings2 } from 'lucide-react';
 
 interface LoopControlsProps {
-  loopStatus: LoopStatus | null;
-  onStart: (options: LoopStartOptions) => void;
+  loopStatus: LoopStatus;
+  onStart: (options: { mode: LoopMode; maxIterations?: number; workScope?: string }) => void;
   onStop: () => void;
-  isConnected: boolean;
 }
 
-export function LoopControls({
-  loopStatus,
-  onStart,
-  onStop,
-  isConnected,
-}: LoopControlsProps) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [options, setOptions] = useState<LoopStartOptions>({
-    mode: 'build',
-    maxIterations: 100,
-    maxRuntime: 14400,
-    costLimit: 50,
-    completionPromise: 'ALL_TASKS_COMPLETE',
-    loopDetectionThreshold: 0.9,
-    backoffEnabled: true,
-    rollbackOnFailure: true,
-    dryRun: false,
-  });
-
-  const isRunning = loopStatus?.running ?? false;
+export function LoopControls({ loopStatus, onStart, onStop }: LoopControlsProps) {
+  const [mode, setMode] = useState<LoopMode>('build');
+  const [maxIterations, setMaxIterations] = useState<string>('20');
+  const [workScope, setWorkScope] = useState('');
 
   const handleStart = () => {
-    onStart(options);
+    const iterations = maxIterations ? parseInt(maxIterations, 10) : undefined;
+    onStart({
+      mode,
+      maxIterations: iterations && iterations > 0 ? iterations : undefined,
+      workScope: mode === 'plan-work' ? workScope : undefined,
+    });
   };
 
-  const modes: { value: LoopMode; label: string }[] = [
-    { value: 'build', label: 'Build' },
-    { value: 'plan', label: 'Plan' },
-    { value: 'plan-slc', label: 'Plan (SLC)' },
-    { value: 'plan-work', label: 'Plan (Work)' },
-    { value: 'review', label: 'Review' },
-  ];
-
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-foreground">Loop Controls</h3>
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="p-1 hover:bg-muted rounded"
-          title="Advanced Settings"
-        >
-          <Settings className="h-4 w-4 text-muted-foreground" />
-        </button>
-      </div>
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Settings2 className="h-5 w-5" />
+          Loop Controls
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap items-end gap-4">
+          {/* Mode Selection */}
+          <div className="w-[180px] space-y-2">
+            <Label htmlFor="mode">Mode</Label>
+            <Select
+              value={mode}
+              onValueChange={(v) => setMode(v as LoopMode)}
+              disabled={loopStatus.running}
+            >
+              <SelectTrigger id="mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="build">Build</SelectItem>
+                <SelectItem value="plan">Plan</SelectItem>
+                <SelectItem value="plan-slc">Plan SLC</SelectItem>
+                <SelectItem value="plan-work">Plan Work</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Mode Selector */}
-      <div className="mb-4">
-        <label className="block text-sm text-muted-foreground mb-1">Mode</label>
-        <select
-          value={options.mode}
-          onChange={(e) =>
-            setOptions({ ...options, mode: e.target.value as LoopMode })
-          }
-          disabled={isRunning}
-          className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground disabled:opacity-50"
-        >
-          {modes.map((mode) => (
-            <option key={mode.value} value={mode.value}>
-              {mode.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Basic Options */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div>
-          <label className="block text-sm text-muted-foreground mb-1">
-            Max Iterations
-          </label>
-          <input
-            type="number"
-            value={options.maxIterations}
-            onChange={(e) =>
-              setOptions({ ...options, maxIterations: parseInt(e.target.value) || 100 })
-            }
-            disabled={isRunning}
-            min={1}
-            max={1000}
-            className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground disabled:opacity-50"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-muted-foreground mb-1">
-            Cost Limit ($)
-          </label>
-          <input
-            type="number"
-            value={options.costLimit}
-            onChange={(e) =>
-              setOptions({ ...options, costLimit: parseFloat(e.target.value) || 50 })
-            }
-            disabled={isRunning}
-            min={1}
-            step={5}
-            className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground disabled:opacity-50"
-          />
-        </div>
-      </div>
-
-      {/* Advanced Options */}
-      {showAdvanced && (
-        <div className="border-t border-border pt-4 mt-4 space-y-3">
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1">
-              Max Runtime (seconds)
-            </label>
-            <input
+          {/* Max Iterations */}
+          <div className="w-[120px] space-y-2">
+            <Label htmlFor="iterations">Max Iterations</Label>
+            <Input
+              id="iterations"
               type="number"
-              value={options.maxRuntime}
-              onChange={(e) =>
-                setOptions({ ...options, maxRuntime: parseInt(e.target.value) || 14400 })
-              }
-              disabled={isRunning}
-              min={60}
-              step={60}
-              className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground disabled:opacity-50"
+              min="0"
+              placeholder="Unlimited"
+              value={maxIterations}
+              onChange={(e) => setMaxIterations(e.target.value)}
+              disabled={loopStatus.running}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              {Math.floor((options.maxRuntime || 0) / 3600)}h{' '}
-              {Math.floor(((options.maxRuntime || 0) % 3600) / 60)}m
+          </div>
+
+          {/* Work Scope (only for plan-work mode) */}
+          {mode === 'plan-work' && (
+            <div className="min-w-[200px] flex-1 space-y-2">
+              <Label htmlFor="workScope">Work Description</Label>
+              <Input
+                id="workScope"
+                placeholder="e.g., user authentication system"
+                value={workScope}
+                onChange={(e) => setWorkScope(e.target.value)}
+                disabled={loopStatus.running}
+              />
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            {loopStatus.running ? (
+              <Button variant="destructive" onClick={onStop} className="gap-2">
+                <Square className="h-4 w-4" />
+                Stop Loop
+              </Button>
+            ) : (
+              <Button onClick={handleStart} className="gap-2">
+                <Play className="h-4 w-4" />
+                Start {mode === 'build' ? 'Build' : mode === 'plan' ? 'Planning' : mode === 'plan-slc' ? 'SLC Planning' : 'Work Planning'}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Mode Description */}
+        <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+          {mode === 'build' && (
+            <p>
+              <strong>Build mode:</strong> Implements tasks from IMPLEMENTATION_PLAN.md one at a
+              time. Runs validation, commits on success, and updates the plan.
             </p>
-          </div>
-
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1">
-              Completion Promise
-            </label>
-            <input
-              type="text"
-              value={options.completionPromise}
-              onChange={(e) =>
-                setOptions({ ...options, completionPromise: e.target.value })
-              }
-              disabled={isRunning}
-              className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground disabled:opacity-50"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-muted-foreground mb-1">
-              Loop Detection Threshold
-            </label>
-            <input
-              type="number"
-              value={options.loopDetectionThreshold}
-              onChange={(e) =>
-                setOptions({
-                  ...options,
-                  loopDetectionThreshold: parseFloat(e.target.value) || 0.9,
-                })
-              }
-              disabled={isRunning}
-              min={0}
-              max={1}
-              step={0.05}
-              className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground disabled:opacity-50"
-            />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={options.backoffEnabled}
-                onChange={(e) =>
-                  setOptions({ ...options, backoffEnabled: e.target.checked })
-                }
-                disabled={isRunning}
-                className="rounded border-input"
-              />
-              <span className="text-sm">Backoff Enabled</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={options.rollbackOnFailure}
-                onChange={(e) =>
-                  setOptions({ ...options, rollbackOnFailure: e.target.checked })
-                }
-                disabled={isRunning}
-                className="rounded border-input"
-              />
-              <span className="text-sm">Rollback on Failure</span>
-            </label>
-          </div>
-
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={options.dryRun}
-              onChange={(e) =>
-                setOptions({ ...options, dryRun: e.target.checked })
-              }
-              disabled={isRunning}
-              className="rounded border-input"
-            />
-            <span className="text-sm">Dry Run (Preview Only)</span>
-          </label>
+          )}
+          {mode === 'plan' && (
+            <p>
+              <strong>Plan mode:</strong> Analyzes specs and existing code to generate or update
+              IMPLEMENTATION_PLAN.md. No implementation or commits.
+            </p>
+          )}
+          {mode === 'plan-slc' && (
+            <p>
+              <strong>Plan SLC mode:</strong> SLC-oriented planning that recommends Simple,
+              Lovable, Complete release slices based on AUDIENCE_JTBD.md.
+            </p>
+          )}
+          {mode === 'plan-work' && (
+            <p>
+              <strong>Plan Work mode:</strong> Creates a scoped plan for the current work branch.
+              Must be run on a feature branch, not main/master.
+            </p>
+          )}
         </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="mt-4 flex gap-2">
-        {isRunning ? (
-          <button
-            onClick={onStop}
-            disabled={!isConnected}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 disabled:opacity-50"
-          >
-            <Square className="h-4 w-4" />
-            Stop Loop
-          </button>
-        ) : (
-          <button
-            onClick={handleStart}
-            disabled={!isConnected}
-            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            <Play className="h-4 w-4" />
-            Start Loop
-          </button>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

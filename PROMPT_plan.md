@@ -1,66 +1,14 @@
-# Ralph Wiggum Plan Mode
+0a. Study `specs/*` with up to 250 parallel Sonnet subagents to learn the application specifications.
+0b. Study @IMPLEMENTATION_PLAN.md (if present) to understand the plan so far.
+0c. Study `src/lib/*` with up to 250 parallel Sonnet subagents to understand shared utilities & components.
+0d. For reference, the application source code is in `src/*`.
 
-You are executing in standard planning mode. Your task is to analyze the project and create an implementation plan.
+1. Study @IMPLEMENTATION_PLAN.md (if present; it may be incorrect) and use up to 500 Sonnet subagents to study existing source code in `src/*` and compare it against `specs/*`. Use an Opus subagent to analyze findings, prioritize tasks, and create/update @IMPLEMENTATION_PLAN.md as a bullet point list sorted in priority of items yet to be implemented. Ultrathink. Consider searching for TODO, minimal implementations, placeholders, skipped/flaky tests, and inconsistent patterns. Study @IMPLEMENTATION_PLAN.md to determine starting point for research and keep it up to date with items considered complete/incomplete using subagents.
 
-## Phase 1: Analysis
+For each task in the plan, derive required tests from acceptance criteria in specs - what specific outcomes need verification (behavior, performance, edge cases). Tests verify WHAT works, not HOW it's implemented. Include as part of task definition.
 
-1. Read all available documentation:
-   - `PRD.md` - Product requirements
-   - `AGENTS.md` - Project configuration
-   - `specs/` - Feature specifications
-   - Existing codebase structure
+When deriving test requirements from acceptance criteria, identify whether verification requires programmatic validation (measurable, inspectable) or human-like judgment (perceptual quality, tone, aesthetics). Both types are equally valid backpressure mechanisms. For subjective criteria that resist programmatic validation, explore src/lib for non-deterministic evaluation patterns.
 
-2. Perform gap analysis:
-   - What features are specified but not implemented?
-   - What tests are needed but missing?
-   - What technical debt exists?
+IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Treat `src/lib` as the project's standard library for shared utilities and components. Prefer consolidated, idiomatic implementations there over ad-hoc copies.
 
-## Phase 2: Generate Plan
-
-Create or update `IMPLEMENTATION_PLAN.md` with:
-
-### Structure
-
-```markdown
-# Implementation Plan
-
-## Current Tasks
-
-### Priority 1 - Critical
-- [ ] Task description (acceptance criteria)
-- [ ] Task description (acceptance criteria)
-
-### Priority 2 - Important
-- [ ] Task description
-- [ ] Task description
-
-### Priority 3 - Nice to Have
-- [ ] Task description
-
-## Completed Tasks
-*Move completed tasks here*
-
-## Notes & Discoveries
-*Technical findings, blockers, decisions*
-```
-
-### Task Guidelines
-
-1. Each task should be completable in one iteration
-2. Include clear acceptance criteria
-3. Order by dependency (dependencies first)
-4. Be specific and actionable
-5. Include test requirements where applicable
-
-## Phase 3: Validation
-
-Review your plan:
-- Are tasks ordered correctly by dependency?
-- Are acceptance criteria clear?
-- Is scope appropriate for each task?
-
-## Output
-
-Write the complete `IMPLEMENTATION_PLAN.md` file to the project root.
-
-Signal completion by outputting: `PLAN_GENERATED`
+ULTIMATE GOAL: We want to achieve [project-specific goal]. Consider missing elements and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md. If you create a new element then document the plan to implement it in @IMPLEMENTATION_PLAN.md using a subagent.

@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_WS_PORT: string;
+  readonly VITE_PORT: string;
 }
 
 interface ImportMeta {

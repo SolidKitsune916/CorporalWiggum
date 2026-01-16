@@ -1,66 +1,19 @@
-# Ralph Wiggum Plan-SLC Mode
+0a. Study @AUDIENCE_JTBD.md to understand who we're building for and their Jobs to Be Done.
+0b. Study `specs/*` with up to 250 parallel Sonnet subagents to learn JTBD activities.
+0c. Study @IMPLEMENTATION_PLAN.md (if present) to understand the plan so far.
+0d. Study `src/lib/*` with up to 250 parallel Sonnet subagents to understand shared utilities & components.
+0e. For reference, the application source code is in `src/*`.
 
-You are executing in SLC (Simple, Lovable, Complete) planning mode. Your task is to create a minimal viable implementation plan focused on user value.
+1. Sequence the activities in `specs/*` into a user journey map for the audience in @AUDIENCE_JTBD.md. Consider how activities flow into each other and what dependencies exist.
 
-## Phase 1: Context Loading
+2. Determine the next SLC release. Use up to 500 Sonnet subagents to compare `src/*` against `specs/*`. Use an Opus subagent to analyze findings. Ultrathink. Given what's already implemented recommend which activities (at what capability depths) form the most valuable next release. Prefer thin horizontal slices - the narrowest scope that still delivers real value. A good slice is Simple (narrow, achievable), Lovable (people want to use it), and Complete (fully accomplishes a meaningful job, not a broken preview).
 
-1. Read `AUDIENCE_JTBD.md` for:
-   - Target user personas
-   - Jobs-to-be-done
-   - Success metrics
+3. Use an Opus subagent (ultrathink) to analyze and synthesize the findings, prioritize tasks, and create/update @IMPLEMENTATION_PLAN.md as a bullet point list sorted in priority of items yet to be implemented for the recommended SLC release. Begin plan with a summary of the recommended SLC release (what's included and why), then list prioritized tasks for that scope. Consider TODOs, placeholders, minimal implementations, skipped tests - but scoped to the release. Note discoveries outside scope as future work.
 
-2. Read `PRD.md` for:
-   - Product requirements
-   - Feature specifications
+For each task in the plan, derive required tests from acceptance criteria in specs - what specific outcomes need verification (behavior, performance, edge cases). Tests verify WHAT works, not HOW it's implemented. Include as part of task definition.
 
-3. Read existing codebase to understand current state
+When deriving test requirements from acceptance criteria, identify whether verification requires programmatic validation (measurable, inspectable) or human-like judgment (perceptual quality, tone, aesthetics). Both types are equally valid backpressure mechanisms. For subjective criteria that resist programmatic validation, explore src/lib for non-deterministic evaluation patterns.
 
-## Phase 2: User Journey Mapping
+IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Treat `src/lib` as the project's standard library for shared utilities and components. Prefer consolidated, idiomatic implementations there over ad-hoc copies.
 
-1. Identify the primary user journey
-2. Sequence activities from start to finish
-3. Identify which activities provide most value
-
-## Phase 3: SLC Scope Definition
-
-For each feature, ask:
-- **Simple**: Can this be implemented simply?
-- **Lovable**: Will users love this? Does it solve their pain?
-- **Complete**: Is this a complete solution for the use case?
-
-Prioritize features that are:
-- High user value
-- Low implementation complexity
-- Complete (no half-features)
-
-## Phase 4: Generate Plan
-
-Create `IMPLEMENTATION_PLAN.md` with SLC-focused tasks:
-
-```markdown
-# Implementation Plan (SLC Release)
-
-## User Journey: [Primary Journey Name]
-
-### Phase 1: [Core Value]
-- [ ] Task that delivers core user value
-- [ ] Task that completes the experience
-
-### Phase 2: [Polish]
-- [ ] Task that makes it lovable
-- [ ] Task that removes friction
-
-## Deferred (Future Release)
-*Features intentionally excluded from this release*
-- Feature X - [reason for deferral]
-
-## Success Criteria
-- [ ] User can complete [primary job]
-- [ ] [Metric] achieved
-```
-
-## Output
-
-Write the SLC-focused `IMPLEMENTATION_PLAN.md` file.
-
-Signal completion by outputting: `SLC_PLAN_GENERATED`
+ULTIMATE GOAL: We want to achieve the most valuable next release for the audience in @AUDIENCE_JTBD.md. Consider missing elements and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md. If you create a new element then document the plan to implement it in @IMPLEMENTATION_PLAN.md using a subagent.

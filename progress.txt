@@ -4,6 +4,20 @@ This file tracks learnings, patterns, and discoveries across Ralph Wiggum iterat
 Entries are append-only - never delete, only add.
 
 ---
+[2026-01-16] Simple Mode Verification Started
+- Goal: Verify Ralph Wiggum V3 dashboard is complete and functional
+- Mode: Simple (using prd.json for task tracking)
+- Key files: prd.json (tasks), progress.txt (learnings), .ralph-mode (workflow mode)
+- Dashboard location: ./dashboard
+- Build: cd dashboard && npm run build
+- Typecheck: cd dashboard && npx tsc --noEmit
+- Dev server: cd dashboard && npm run dev (port 5173)
+- Backend: cd dashboard && npx tsx server/index.ts (port 3001)
+- Pattern: Check TypeScript compiles BEFORE marking story complete
+- Pattern: Run the actual commands to verify, don't just check file existence
+---
+
+---
 [2026-01-15] Project Initialized
 - Pattern: Created complete Ralph Wiggum documentation suite
 - Tip: Start with AUDIENCE_JTBD.md to ground all specs in user needs

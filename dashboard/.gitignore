@@ -22,9 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Ralph output files
-ralph.log
-ralph-health.log
-ralph-metrics.json
-.ralph-cost

@@ -1,353 +1,470 @@
-import { spawn, ChildProcess } from 'child_process';
+import { EventEmitter } from 'events';
+import { spawn, ChildProcess, exec } from 'child_process';
 import path from 'path';
-import stringSimilarity from 'string-similarity';
-import type { ProjectDetector } from './projectDetector.js';
-import type { CostTracker } from './costTracker.js';
-import type { TelemetryTracker } from './telemetryTracker.js';
+import fs from 'fs';
+import type { LoopStatus, LoopMode, LogEntry } from '../src/types';
+import { getSessionRepository, type ActiveSession } from './database/repositories/SessionRepository.js';
+import { getExecutionHistoryRepository } from './database/repositories/ExecutionHistoryRepository.js';
 
-export interface LoopStartOptions {
-  mode: 'build' | 'plan' | 'plan-slc' | 'plan-work' | 'review';
-  maxIterations?: number;
-  maxRuntime?: number;
+// Heartbeat interval in milliseconds
+const HEARTBEAT_INTERVAL_MS = 5000;
+
+// Find bash executable on Windows
+function findBashOnWindows(): string | null {
+  const possiblePaths = [
+    'C:\\Program Files\\Git\\bin\\bash.exe',
+    'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+    'C:\\Git\\bin\\bash.exe',
+    process.env.PROGRAMFILES + '\\Git\\bin\\bash.exe',
+    process.env['PROGRAMFILES(X86)'] + '\\Git\\bin\\bash.exe',
+  ];
+
+  for (const bashPath of possiblePaths) {
+    if (bashPath && fs.existsSync(bashPath)) {
+      return bashPath;
+    }
+  }
+  return null;
+}
+
+export interface LoopControllerOptions {
+  projectId?: string;
+  maxRuntimeSeconds?: number;
   costLimit?: number;
   completionPromise?: string;
-  loopDetectionThreshold?: number;
-  backoffEnabled?: boolean;
-  rollbackOnFailure?: boolean;
-  dryRun?: boolean;
 }
 
-export interface LoopStatus {
-  running: boolean;
-  mode: string;
-  iteration: number;
-  maxIterations: number;
-  startedAt?: Date;
-  elapsedTime?: number;
-  maxRuntime?: number;
-  costSpent?: number;
-  costLimit?: number;
-  tokensUsed?: { input: number; output: number };
-  consecutiveFailures: number;
-  loopDetected: boolean;
-  backoffSeconds?: number;
-  completionSignal?: string;
-  exitReason?: string;
-}
-
-interface LoopControllerOptions {
-  projectDetector: ProjectDetector;
-  costTracker: CostTracker;
-  telemetryTracker: TelemetryTracker;
-  broadcast: (message: object) => void;
-}
-
-export class LoopController {
+export class LoopController extends EventEmitter {
+  private projectPath: string; // Target project to run in
+  private ralphPath: string; // RalphWiggumV2 directory (for loop.sh)
+  private projectId: string | null = null;
   private process: ChildProcess | null = null;
-  private status: LoopStatus;
-  private options: LoopStartOptions | null = null;
-  private startTime: Date | null = null;
-  private elapsedInterval: NodeJS.Timeout | null = null;
-  private recentOutputs: string[] = [];
-  private currentIterationOutput: string = '';
+  private sessionId: string | null = null;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private status: LoopStatus = {
+    running: false,
+    mode: null,
+    iteration: 0,
+    maxIterations: 0,
+  };
 
-  private projectDetector: ProjectDetector;
-  private costTracker: CostTracker;
-  private telemetryTracker: TelemetryTracker;
-  private broadcast: (message: object) => void;
+  constructor(projectPath: string, ralphPath?: string) {
+    super();
+    this.projectPath = projectPath;
+    this.ralphPath = ralphPath || projectPath;
+  }
 
-  constructor(opts: LoopControllerOptions) {
-    this.projectDetector = opts.projectDetector;
-    this.costTracker = opts.costTracker;
-    this.telemetryTracker = opts.telemetryTracker;
-    this.broadcast = opts.broadcast;
+  /**
+   * Set the project ID for session tracking
+   */
+  setProjectId(projectId: string): void {
+    this.projectId = projectId;
+  }
 
-    this.status = {
-      running: false,
-      mode: 'build',
-      iteration: 0,
-      maxIterations: 100,
-      consecutiveFailures: 0,
-      loopDetected: false,
-    };
+  /**
+   * Get the current session ID
+   */
+  getSessionId(): string | null {
+    return this.sessionId;
   }
 
   getStatus(): LoopStatus {
     return { ...this.status };
   }
 
-  async start(options: LoopStartOptions): Promise<void> {
-    if (this.status.running) {
-      console.warn('Loop is already running');
+  /**
+   * Get the current active session from the database
+   */
+  getActiveSession(): ActiveSession | null {
+    if (!this.sessionId) return null;
+    const sessionRepo = getSessionRepository();
+    return sessionRepo.getSession(this.sessionId);
+  }
+
+  /**
+   * Recover an existing session (e.g., after browser refresh)
+   */
+  recoverSession(session: ActiveSession): void {
+    this.sessionId = session.id;
+    this.projectId = session.projectId;
+    this.status = {
+      running: session.state === 'running' || session.state === 'paused',
+      mode: session.mode,
+      iteration: session.currentIteration,
+      maxIterations: session.maxIterations || 0,
+      workScope: session.workScope ?? undefined,
+      startedAt: new Date(session.startedAt),
+      pid: session.pid,
+    };
+
+    // Start heartbeat for recovered session
+    this.startHeartbeat();
+
+    this.emit('status', this.status);
+  }
+
+  start(options: { mode: LoopMode; maxIterations?: number; workScope?: string } & LoopControllerOptions) {
+    if (this.process) {
+      this.emitLog('Loop already running', 'warning');
       return;
     }
 
-    this.options = {
-      mode: options.mode || 'build',
-      maxIterations: options.maxIterations ?? 100,
-      maxRuntime: options.maxRuntime ?? 14400,
-      costLimit: options.costLimit ?? 50,
-      completionPromise: options.completionPromise ?? 'ALL_TASKS_COMPLETE',
-      loopDetectionThreshold: options.loopDetectionThreshold ?? 0.9,
-      backoffEnabled: options.backoffEnabled ?? true,
-      rollbackOnFailure: options.rollbackOnFailure ?? true,
-      dryRun: options.dryRun ?? false,
-    };
+    const { mode, maxIterations, workScope, maxRuntimeSeconds, costLimit, completionPromise } = options;
+    // Use loop.sh from Ralph's directory, not the target project
+    const loopScript = path.join(this.ralphPath, 'loop.sh');
 
-    // Reset state
+    // Build command arguments
+    const args: string[] = [];
+
+    switch (mode) {
+      case 'plan':
+        args.push('plan');
+        if (maxIterations) args.push(maxIterations.toString());
+        break;
+      case 'plan-slc':
+        args.push('plan-slc');
+        if (maxIterations) args.push(maxIterations.toString());
+        break;
+      case 'plan-work':
+        args.push('plan-work');
+        if (workScope) args.push(workScope);
+        break;
+      case 'build':
+        if (maxIterations) {
+          args.push(maxIterations.toString());
+        }
+        break;
+    }
+
+    this.emitLog(
+      `Starting loop: ${mode}${maxIterations ? ` (max ${maxIterations} iterations)` : ''}`,
+      'info'
+    );
+    if (this.ralphPath !== this.projectPath) {
+      this.emitLog(`Target project: ${this.projectPath}`, 'info');
+      this.emitLog(`Ralph directory: ${this.ralphPath}`, 'info');
+    }
+
+    // Determine how to run bash on this platform
+    const isWindows = process.platform === 'win32';
+    let bashCmd = 'bash';
+
+    if (isWindows) {
+      const gitBash = findBashOnWindows();
+      if (gitBash) {
+        bashCmd = gitBash;
+        this.emitLog(`Using Git Bash: ${gitBash}`, 'info');
+      } else {
+        this.emitLog(
+          'Error: Git Bash not found. Please install Git for Windows to run the loop.',
+          'error'
+        );
+        this.emitLog('Download from: https://git-scm.com/download/win', 'error');
+        return;
+      }
+    }
+
+    // Run in target project directory, but set RALPH_DIR so loop.sh can find its files
+    this.process = spawn(bashCmd, [loopScript, ...args], {
+      cwd: this.projectPath,
+      env: {
+        ...process.env,
+        WORK_SCOPE: workScope || '',
+        RALPH_DIR: this.ralphPath, // Tell loop.sh where to find prompt files
+      },
+    });
+
+    const pid = this.process.pid;
+
+    // Create session in database for browser refresh resilience
+    if (this.projectId && pid) {
+      try {
+        const sessionRepo = getSessionRepository();
+        const session = sessionRepo.createSession({
+          projectId: this.projectId,
+          pid,
+          mode,
+          maxIterations,
+          maxRuntimeSeconds,
+          costLimit,
+          workScope,
+          completionPromise: completionPromise || 'ALL_TASKS_COMPLETE',
+        });
+        this.sessionId = session.id;
+        this.emitLog(`Session created: ${session.id}`, 'info');
+
+        // Start heartbeat
+        this.startHeartbeat();
+      } catch (err) {
+        this.emitLog(`Failed to create session: ${(err as Error).message}`, 'warning');
+      }
+    }
+
     this.status = {
       running: true,
-      mode: this.options.mode,
+      mode,
       iteration: 0,
-      maxIterations: this.options.maxIterations ?? 100,
-      maxRuntime: this.options.maxRuntime,
-      costLimit: this.options.costLimit,
-      consecutiveFailures: 0,
-      loopDetected: false,
+      maxIterations: maxIterations || 0,
+      workScope,
+      startedAt: new Date(),
+      pid,
     };
 
-    this.startTime = new Date();
-    this.status.startedAt = this.startTime;
-    this.recentOutputs = [];
-    this.currentIterationOutput = '';
-
-    // Set cost limit
-    this.costTracker.setLimit(this.options.costLimit ?? 50);
-    this.costTracker.reset();
-
-    // Reset telemetry
-    this.telemetryTracker.reset();
-
-    // Start elapsed time tracking
-    this.elapsedInterval = setInterval(() => {
-      if (this.startTime) {
-        this.status.elapsedTime = Math.floor((Date.now() - this.startTime.getTime()) / 1000);
-        this.status.costSpent = this.costTracker.getTotalCost();
-        this.status.tokensUsed = {
-          input: this.costTracker.getData().totalTokensInput,
-          output: this.costTracker.getData().totalTokensOutput,
-        };
-        this.broadcastStatus();
-      }
-    }, 1000);
-
-    // Start the loop process
-    await this.runLoop();
-  }
-
-  stop(): void {
-    if (!this.status.running) {
-      return;
-    }
-
-    if (this.process) {
-      this.process.kill('SIGTERM');
-      this.process = null;
-    }
-
-    this.cleanup('user_stopped');
-  }
-
-  private async runLoop(): Promise<void> {
-    const projectConfig = this.projectDetector.getProjectConfig();
-    if (!projectConfig) {
-      console.error('No project configured');
-      this.cleanup('error');
-      return;
-    }
-
-    const loopScript = path.resolve(projectConfig.path, 'loop.sh');
-
-    // Check if loop.sh exists in project, otherwise use the one from RalphWiggumV3
-    const fs = await import('fs');
-    let scriptPath = loopScript;
-    if (!fs.existsSync(loopScript)) {
-      scriptPath = path.resolve(path.dirname(path.dirname(__dirname)), 'loop.sh');
-    }
-
-    const args: string[] = [];
-    if (this.options?.mode && this.options.mode !== 'build') {
-      args.push(this.options.mode);
-    }
-    if (this.options?.maxIterations) {
-      args.push(this.options.maxIterations.toString());
-    }
-
-    const env = {
-      ...process.env,
-      RALPH_DIR: path.dirname(path.dirname(__dirname)),
-      PROJECT_PATH: projectConfig.path,
-      COST_LIMIT: this.options?.costLimit?.toString() ?? '50',
-      MAX_RUNTIME: this.options?.maxRuntime?.toString() ?? '14400',
-      COMPLETION_PROMISE: this.options?.completionPromise ?? 'ALL_TASKS_COMPLETE',
-      DRY_RUN: this.options?.dryRun ? 'true' : 'false',
-      BACKOFF_ENABLED: this.options?.backoffEnabled ? 'true' : 'false',
-      ROLLBACK_ON_FAILURE: this.options?.rollbackOnFailure ? 'true' : 'false',
-    };
-
-    this.process = spawn('bash', [scriptPath, ...args], {
-      cwd: projectConfig.path,
-      env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    this.emit('status', this.status);
 
     // Handle stdout
     this.process.stdout?.on('data', (data) => {
-      const output = data.toString();
-      this.handleOutput(output, 'stdout');
+      const lines = data.toString().split('\n').filter((l: string) => l.trim());
+      lines.forEach((line: string) => {
+        // Detect iteration markers
+        const iterMatch = line.match(/LOOP\s+(\d+)/i);
+        if (iterMatch) {
+          const newIteration = parseInt(iterMatch[1], 10);
+          this.status.iteration = newIteration;
+
+          // Update session iteration in database
+          if (this.sessionId) {
+            try {
+              const sessionRepo = getSessionRepository();
+              sessionRepo.updateIteration(this.sessionId, newIteration);
+            } catch {
+              // Ignore errors updating iteration
+            }
+          }
+
+          this.emit('status', this.status);
+        }
+
+        // Detect token usage (if loop.sh outputs it)
+        const tokenMatch = line.match(/tokens:\s*(\d+)\s*input,?\s*(\d+)\s*output/i);
+        if (tokenMatch && this.sessionId) {
+          try {
+            const sessionRepo = getSessionRepository();
+            sessionRepo.updateTokenUsage(
+              this.sessionId,
+              parseInt(tokenMatch[1], 10),
+              parseInt(tokenMatch[2], 10)
+            );
+          } catch {
+            // Ignore errors updating tokens
+          }
+        }
+
+        // Detect cost updates (if loop.sh outputs it)
+        const costMatch = line.match(/cost:\s*\$?([\d.]+)/i);
+        if (costMatch && this.sessionId) {
+          try {
+            const sessionRepo = getSessionRepository();
+            sessionRepo.updateCost(this.sessionId, parseFloat(costMatch[1]));
+          } catch {
+            // Ignore errors updating cost
+          }
+        }
+
+        this.emitLog(line, 'info');
+      });
     });
 
     // Handle stderr
     this.process.stderr?.on('data', (data) => {
-      const output = data.toString();
-      this.handleOutput(output, 'stderr');
+      const lines = data.toString().split('\n').filter((l: string) => l.trim());
+      lines.forEach((line: string) => {
+        this.emitLog(line, 'error');
+      });
     });
 
     // Handle process exit
     this.process.on('close', (code) => {
-      if (code === 0) {
-        this.cleanup('completed');
-      } else if (this.status.running) {
-        this.cleanup('error');
-      }
-    });
+      this.emitLog(`Loop exited with code ${code}`, code === 0 ? 'success' : 'error');
 
-    this.process.on('error', (error) => {
-      console.error('Loop process error:', error);
-      this.cleanup('error');
-    });
-  }
+      // Stop heartbeat
+      this.stopHeartbeat();
 
-  private handleOutput(output: string, stream: 'stdout' | 'stderr'): void {
-    this.currentIterationOutput += output;
-
-    // Parse iteration markers
-    const iterationMatch = output.match(/Iteration (\d+)/);
-    if (iterationMatch) {
-      const newIteration = parseInt(iterationMatch[1], 10);
-      if (newIteration !== this.status.iteration) {
-        // New iteration started
-        if (this.status.iteration > 0) {
-          this.processIterationEnd();
-        }
-        this.status.iteration = newIteration;
-        this.currentIterationOutput = output;
-      }
-    }
-
-    // Parse cost/token information from JSON output
-    this.parseCostFromOutput(output);
-
-    // Check for completion signal
-    if (output.includes(this.options?.completionPromise ?? 'ALL_TASKS_COMPLETE')) {
-      this.status.completionSignal = this.options?.completionPromise;
-    }
-
-    // Broadcast output
-    this.broadcast({
-      type: 'loop:output',
-      payload: {
-        iteration: this.status.iteration,
-        content: output,
-        stream,
-      },
-    });
-  }
-
-  private parseCostFromOutput(output: string): void {
-    // Parse Claude CLI stream-json output for usage information
-    // Format: {"type":"usage","usage":{"input_tokens":1234,"output_tokens":567}}
-    const lines = output.split('\n');
-    for (const line of lines) {
-      if (line.includes('"type":"usage"') || line.includes('"type": "usage"')) {
+      // Record execution history and mark session complete
+      if (this.sessionId && this.projectId) {
         try {
-          const json = JSON.parse(line);
-          if (json.type === 'usage' && json.usage) {
-            this.costTracker.addUsage(
-              json.usage.input_tokens || 0,
-              json.usage.output_tokens || 0
-            );
-            this.broadcast({
-              type: 'cost:update',
-              payload: this.costTracker.getData(),
+          const sessionRepo = getSessionRepository();
+          const historyRepo = getExecutionHistoryRepository();
+          const session = sessionRepo.getSession(this.sessionId);
+
+          if (session) {
+            // Record in execution history
+            historyRepo.recordExecution({
+              projectId: this.projectId,
+              sessionId: this.sessionId,
+              mode: this.status.mode || 'build',
+              iteration: this.status.iteration,
+              startedAt: session.startedAt,
+              endedAt: new Date().toISOString(),
+              success: code === 0,
+              exitReason: code === 0 ? 'completed' : 'error',
+              tokensInput: session.tokensInputTotal,
+              tokensOutput: session.tokensOutputTotal,
+              costUsd: session.costSpent,
+              errorMessage: code !== 0 ? `Process exited with code ${code}` : undefined,
             });
+
+            // Mark session as completed
+            sessionRepo.markSessionCompleted(this.sessionId, code === 0 ? 'completed' : 'error');
           }
-        } catch {
-          // Not valid JSON, skip
+        } catch (err) {
+          this.emitLog(`Failed to record execution: ${(err as Error).message}`, 'warning');
         }
       }
-    }
+
+      this.process = null;
+      this.sessionId = null;
+      this.status = {
+        ...this.status,
+        running: false,
+        pid: undefined,
+      };
+      this.emit('status', this.status);
+    });
+
+    this.process.on('error', (err) => {
+      this.emitLog(`Loop error: ${err.message}`, 'error');
+
+      // Stop heartbeat
+      this.stopHeartbeat();
+
+      // Mark session as crashed
+      if (this.sessionId) {
+        try {
+          const sessionRepo = getSessionRepository();
+          sessionRepo.markSessionCrashed(this.sessionId);
+        } catch {
+          // Ignore errors
+        }
+      }
+
+      this.process = null;
+      this.sessionId = null;
+      this.status = {
+        ...this.status,
+        running: false,
+        pid: undefined,
+      };
+      this.emit('status', this.status);
+    });
   }
 
-  private processIterationEnd(): void {
-    // Check for loop detection
-    const threshold = this.options?.loopDetectionThreshold ?? 0.9;
-    for (const prev of this.recentOutputs) {
-      const similarity = stringSimilarity.compareTwoStrings(
-        this.currentIterationOutput,
-        prev
-      );
-      if (similarity >= threshold) {
-        this.status.loopDetected = true;
-        this.status.consecutiveFailures++;
-        break;
+  stop() {
+    if (!this.process) {
+      this.emitLog('No loop running', 'warning');
+      return;
+    }
+
+    const pid = this.process.pid;
+    this.emitLog('Stopping loop...', 'info');
+
+    // Mark session as stopping
+    if (this.sessionId) {
+      try {
+        const sessionRepo = getSessionRepository();
+        sessionRepo.updateSessionState(this.sessionId, 'stopping');
+      } catch {
+        // Ignore errors
       }
     }
 
-    // Store output for comparison
-    this.recentOutputs.push(this.currentIterationOutput);
-    if (this.recentOutputs.length > 5) {
-      this.recentOutputs.shift();
-    }
+    const isWindows = process.platform === 'win32';
 
-    // Record telemetry
-    this.telemetryTracker.recordIteration({
-      iteration: this.status.iteration,
-      success: !this.status.loopDetected,
-      duration: Date.now() - (this.startTime?.getTime() ?? Date.now()),
-      tokensInput: this.costTracker.getData().totalTokensInput,
-      tokensOutput: this.costTracker.getData().totalTokensOutput,
-      cost: this.costTracker.getTotalCost(),
-      outputPreview: this.currentIterationOutput.slice(0, 200),
-    });
+    if (isWindows && pid) {
+      // On Windows, use taskkill to kill the process tree (includes child processes)
+      // This is more reliable than signals for Git Bash processes
+      exec(`taskkill /pid ${pid} /T /F`, (err: Error | null) => {
+        if (err) {
+          this.emitLog(`Failed to kill process tree: ${err.message}`, 'warning');
+          // Fallback to regular kill
+          if (this.process) {
+            this.process.kill();
+          }
+        } else {
+          this.emitLog('Process tree terminated', 'info');
+        }
+      });
+    } else {
+      // On Unix, send SIGINT for graceful shutdown
+      this.process.kill('SIGINT');
 
-    // Check limits
-    if (this.status.iteration >= (this.options?.maxIterations ?? 100)) {
-      this.stop();
-      this.status.exitReason = 'max_iterations';
-    }
-
-    if (this.costTracker.getTotalCost() >= (this.options?.costLimit ?? 50)) {
-      this.stop();
-      this.status.exitReason = 'cost_limit';
-    }
-
-    const elapsed = this.startTime
-      ? (Date.now() - this.startTime.getTime()) / 1000
-      : 0;
-    if (elapsed >= (this.options?.maxRuntime ?? 14400)) {
-      this.stop();
-      this.status.exitReason = 'runtime_limit';
+      // Force kill after 5 seconds if still running
+      setTimeout(() => {
+        if (this.process) {
+          this.emitLog('Force killing loop...', 'warning');
+          this.process.kill('SIGKILL');
+        }
+      }, 5000);
     }
   }
 
-  private cleanup(exitReason: string): void {
-    this.status.running = false;
-    this.status.exitReason = exitReason;
-
-    if (this.elapsedInterval) {
-      clearInterval(this.elapsedInterval);
-      this.elapsedInterval = null;
+  /**
+   * Pause the current session
+   */
+  pause(): void {
+    if (this.sessionId) {
+      try {
+        const sessionRepo = getSessionRepository();
+        sessionRepo.updateSessionState(this.sessionId, 'paused');
+        this.emitLog('Session paused', 'info');
+      } catch (err) {
+        this.emitLog(`Failed to pause session: ${(err as Error).message}`, 'warning');
+      }
     }
-
-    this.process = null;
-    this.broadcastStatus();
   }
 
-  private broadcastStatus(): void {
-    this.broadcast({
-      type: 'loop:status',
-      payload: this.getStatus(),
-    });
+  /**
+   * Resume a paused session
+   */
+  resume(): void {
+    if (this.sessionId) {
+      try {
+        const sessionRepo = getSessionRepository();
+        sessionRepo.updateSessionState(this.sessionId, 'running');
+        this.emitLog('Session resumed', 'info');
+      } catch (err) {
+        this.emitLog(`Failed to resume session: ${(err as Error).message}`, 'warning');
+      }
+    }
+  }
+
+  /**
+   * Start the heartbeat interval
+   */
+  private startHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+
+    this.heartbeatInterval = setInterval(() => {
+      if (this.sessionId) {
+        try {
+          const sessionRepo = getSessionRepository();
+          sessionRepo.updateHeartbeat(this.sessionId);
+        } catch {
+          // Ignore heartbeat errors
+        }
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  /**
+   * Stop the heartbeat interval
+   */
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  private emitLog(content: string, type: LogEntry['type']) {
+    const entry: LogEntry = {
+      id: `loop-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date(),
+      content,
+      type,
+    };
+    this.emit('log', entry);
   }
 }

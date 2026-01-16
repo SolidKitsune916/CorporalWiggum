@@ -1,0 +1,194 @@
+{
+  "branchName": "ralph/verify-complete",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Dashboard builds without errors",
+      "acceptanceCriteria": [
+        "cd dashboard && npm install completes successfully",
+        "cd dashboard && npm run build completes without errors",
+        "cd dashboard && npx tsc --noEmit passes with no TypeScript errors",
+        "All imports resolve correctly"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Foundation check - if this fails, fix all build errors before proceeding"
+    },
+    {
+      "id": "US-002",
+      "title": "Backend server starts and accepts WebSocket connections",
+      "acceptanceCriteria": [
+        "cd dashboard && npx tsx server/index.ts starts without errors",
+        "Server listens on port 3001",
+        "WebSocket endpoint /ws is accessible",
+        "Server logs show 'Server running on port 3001'"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Verify backend starts - test by running server briefly"
+    },
+    {
+      "id": "US-003",
+      "title": "Frontend dev server starts and renders",
+      "acceptanceCriteria": [
+        "cd dashboard && npm run dev starts Vite on port 5173",
+        "No React errors in console",
+        "Dashboard component renders without crashing",
+        "Connection indicator shows status"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Verify frontend loads"
+    },
+    {
+      "id": "US-004",
+      "title": "Workflow mode toggle displays and functions",
+      "acceptanceCriteria": [
+        "WorkflowModeToggle component renders in dashboard header",
+        "Shows Simple and Advanced buttons with icons",
+        "Clicking Simple sets mode to 'simple'",
+        "Clicking Advanced sets mode to 'advanced'",
+        ".ralph-mode file is updated when mode changes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Verify the mode toggle feature we implemented"
+    },
+    {
+      "id": "US-005",
+      "title": "TaskList displays correctly for each workflow mode",
+      "acceptanceCriteria": [
+        "In simple mode: TaskList shows 'User Stories' title with Zap icon",
+        "In advanced mode: TaskList shows 'Implementation Plan' title with Rocket icon",
+        "Tasks from prd.json display in simple mode",
+        "Tasks from IMPLEMENTATION_PLAN.md display in advanced mode",
+        "Completed tasks show green checkmark"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Verify TaskList adapts to workflow mode"
+    },
+    {
+      "id": "US-006",
+      "title": "loop.sh respects workflow mode",
+      "acceptanceCriteria": [
+        "./loop.sh displays 'Workflow: simple' when .ralph-mode contains 'simple'",
+        "./loop.sh displays 'Workflow: advanced' when .ralph-mode contains 'advanced'",
+        "In simple mode, PROMPT_simple.md is used",
+        "In advanced mode, PROMPT_build.md is used",
+        "Task counting works for both prd.json and IMPLEMENTATION_PLAN.md"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Verify bash loop respects mode setting"
+    },
+    {
+      "id": "US-007",
+      "title": "Project launcher loads and displays projects",
+      "acceptanceCriteria": [
+        "Navigating to ?mode=launcher shows LauncherHome",
+        "Launcher displays list of registered projects",
+        "Add Project button is visible and clickable",
+        "Project cards show project name and path"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Verify launcher basic functionality"
+    },
+    {
+      "id": "US-008",
+      "title": "OnboardingWizard includes mode selection step",
+      "acceptanceCriteria": [
+        "Wizard shows mode selection after welcome step",
+        "Simple and Advanced mode cards are displayed",
+        "Selecting a mode updates the workflowMode state",
+        "Continue button proceeds to scanning step"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Verify onboarding includes mode selection"
+    },
+    {
+      "id": "US-009",
+      "title": "All WebSocket handlers respond correctly",
+      "acceptanceCriteria": [
+        "mode:get returns current mode from .ralph-mode",
+        "mode:set updates .ralph-mode and creates missing files",
+        "loop:start initiates the loop process",
+        "config:read returns file contents",
+        "No unhandled message types in server logs"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Verify WebSocket communication works"
+    },
+    {
+      "id": "US-010",
+      "title": "Templates generate correct file content",
+      "acceptanceCriteria": [
+        "prd.json template creates valid JSON structure",
+        "progress.txt template includes date placeholder",
+        ".ralph-mode template defaults to 'simple'",
+        "AGENTS.md template includes build commands section",
+        "TemplateManager.initializeProject creates files correctly"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Verify template system works"
+    },
+    {
+      "id": "US-011",
+      "title": "FileWatcher parses tasks from both file types",
+      "acceptanceCriteria": [
+        "In simple mode: FileWatcher parses prd.json user stories",
+        "In advanced mode: FileWatcher parses IMPLEMENTATION_PLAN.md checkboxes",
+        "Task completion count is accurate",
+        "Tasks emit to dashboard via WebSocket"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Verify FileWatcher handles both modes"
+    },
+    {
+      "id": "US-012",
+      "title": "Review and fix any remaining TypeScript errors",
+      "acceptanceCriteria": [
+        "npx tsc --noEmit in dashboard directory passes",
+        "No 'any' type warnings for core functionality",
+        "All imports have proper type definitions",
+        "No unused variable warnings in modified files"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Final TypeScript cleanup"
+    },
+    {
+      "id": "US-013",
+      "title": "Documentation is accurate and complete",
+      "acceptanceCriteria": [
+        "RALPH_WIGGUM_README.md explains simple vs advanced modes",
+        "AGENTS.md has correct build/test commands",
+        "progress.txt has relevant learnings logged",
+        "README.md exists and describes the project"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Ensure documentation matches implementation"
+    },
+    {
+      "id": "US-014",
+      "title": "End-to-end verification complete",
+      "acceptanceCriteria": [
+        "Can start dashboard: cd dashboard && npm run dev",
+        "Can switch between Simple and Advanced modes",
+        "Can view tasks in TaskList for current mode",
+        "Can access launcher at ?mode=launcher",
+        "loop.sh runs and displays correct mode",
+        "All previous stories pass"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Final verification that everything works together"
+    }
+  ]
+}

@@ -1,228 +1,451 @@
-import { useCallback, useState, useEffect } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
-import { useLoop } from '../hooks/useLoop';
-import { useSetupWizard } from '../hooks/useSetupWizard';
-import { LoopControls } from './LoopControls';
+import { useState, useEffect } from 'react';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { LoopStatus } from './LoopStatus';
 import { TaskList } from './TaskList';
 import { LogViewer } from './LogViewer';
-import { CostMeter } from './CostMeter';
-import { TelemetryPanel } from './TelemetryPanel';
-import { HealthIndicator } from './HealthIndicator';
-import { UnifiedSetupWizard } from './setup/UnifiedSetupWizard';
-import type { WSMessage, Task } from '../types';
-import { Wifi, WifiOff, RotateCcw } from 'lucide-react';
+import { ContextMeter } from './ContextMeter';
+import { GitHistory } from './GitHistory';
+import { LoopControls } from './LoopControls';
+import { SetupWizard } from './setup/SetupWizard';
+import { OnboardingWizard } from './setup/OnboardingWizard';
+import { PlanGenerator } from './PlanGenerator';
+import { PRDGenerator } from './PRDGenerator';
+import { ReviewGenerator } from './ReviewGenerator';
+import { ExistingDocsViewer } from './ExistingDocsViewer';
+import { WorkflowModeToggle } from './WorkflowModeToggle';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import {
+  LayoutDashboard,
+  Settings,
+  Terminal,
+  Wifi,
+  WifiOff,
+  Wand2,
+  FileText,
+  ListTodo,
+  Github,
+  FileSearch,
+  Home,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-const WS_PORT = import.meta.env.VITE_WS_PORT || 3001;
-const WS_URL = `ws://localhost:${WS_PORT}`;
+interface DashboardProps {
+  backendPort?: number;
+}
 
-export function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'logs' | 'telemetry' | 'setup'>('dashboard');
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [showSetupWizard, setShowSetupWizard] = useState(false);
+export function Dashboard({ backendPort }: DashboardProps) {
+  // Build WebSocket URL - use custom port if provided, otherwise use default
+  const wsUrl = backendPort
+    ? `ws://localhost:${backendPort}/ws`
+    : undefined; // undefined uses the default from useWebSocket
 
-  const handleMessage = useCallback((message: WSMessage) => {
-    // Route messages to appropriate handlers
-    loopHandlers.handleMessage(message);
-    setupHandlers.handleMessage(message);
+  const {
+    connected,
+    loopStatus,
+    tasks,
+    gitStatus,
+    logs,
+    projectConfig,
+    enabledAgents,
+    planStatus,
+    planOutput,
+    planComplete,
+    planError,
+    prdStatus,
+    prdOutput,
+    prdComplete,
+    prdError,
+    projectScan,
+    scanLoading,
+    projectInfo,
+    availableAgents,
+    cursorRules,
+    agentsLoading,
+    rulesLoading,
+    selectedDocPaths,
+    previewDoc,
+    isLoadingPreview,
+    claudeMdFiles,
+    claudeMdContent,
+    claudeMdLoading,
+    claudeMdApplying,
+    sendCommand,
+    clearLogs,
+    clearPlanOutput,
+    clearPrdOutput,
+    scanProject,
+    listAgents,
+    listRules,
+    setSelectedDocPaths,
+    readDoc,
+    closeDocPreview,
+    listClaudeMdFiles,
+    readClaudeMdFile,
+    applyRalphClaudeMd,
+    closeClaudeMdPreview,
+    dependencyStatus,
+    dependencyLoading,
+    checkDependencies,
+    configPreviewDoc,
+    configPreviewLoading,
+    readConfigFile,
+    closeConfigPreview,
+    repoAgents,
+    repoAgentsLoading,
+    agentInstalling,
+    listRepoAgents,
+    installAgentGlobal,
+    installAgentProject,
+    installAllAgentsGlobal,
+    // Review generator (Feature Set 14)
+    reviewGeneratorStatus,
+    reviewGeneratorOutput,
+    reviewGeneratorComplete,
+    reviewGeneratorError,
+    generateReview,
+    cancelReviewGenerator,
+    clearReviewGeneratorOutput,
+    // Workflow mode
+    workflowMode,
+    setWorkflowMode,
+    getWorkflowMode,
+  } = useWebSocket(wsUrl);
 
-    // Handle task updates
-    if (message.type === 'tasks:update') {
-      setTasks(message.payload as Task[]);
-    }
-  }, []);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [generateSubTab, setGenerateSubTab] = useState<'plan' | 'review' | 'prd'>('plan');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
 
-  const { isConnected, send, reconnect, error: wsError } = useWebSocket({
-    url: WS_URL,
-    onMessage: handleMessage,
-  });
-
-  const loopHandlers = useLoop({
-    send,
-    isConnected,
-  });
-
-  const setupHandlers = useSetupWizard({
-    send,
-    isConnected,
-  });
-
-  // Show setup wizard if not complete and missing Ralph files
+  // Check if we should show onboarding (AGENTS.md not configured)
   useEffect(() => {
-    if (!setupHandlers.isComplete && setupHandlers.missingFiles.length > 0) {
-      setShowSetupWizard(true);
+    if (projectConfig && !onboardingComplete) {
+      // Show onboarding if AGENTS.md doesn't exist or isn't configured
+      const needsOnboarding = !projectConfig.hasAgentsMd;
+      setShowOnboarding(needsOnboarding);
     }
-  }, [setupHandlers.isComplete, setupHandlers.missingFiles]);
+  }, [projectConfig, onboardingComplete]);
 
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'logs', label: 'Logs' },
-    { id: 'telemetry', label: 'Telemetry' },
-    { id: 'setup', label: 'Setup' },
-  ] as const;
+  // Get workflow mode when connected
+  useEffect(() => {
+    if (connected) {
+      getWorkflowMode();
+    }
+  }, [connected, getWorkflowMode]);
 
-  if (showSetupWizard && !setupHandlers.isComplete) {
+  // Trigger project scan when entering generate tab if not already scanned
+  useEffect(() => {
+    if (activeTab === 'generate' && !projectScan && !scanLoading && connected) {
+      scanProject();
+    }
+  }, [activeTab, projectScan, scanLoading, connected, scanProject]);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    setOnboardingComplete(true);
+  };
+
+  const handleSaveAgentsMd = (content: string) => {
+    sendCommand({ type: 'config:write', payload: { file: 'AGENTS.md', content } });
+  };
+
+  const handleRunWizard = () => {
+    setOnboardingComplete(false);
+    setShowOnboarding(true);
+  };
+
+  // Show onboarding wizard if needed
+  if (showOnboarding) {
     return (
-      <UnifiedSetupWizard
-        {...setupHandlers}
-        onComplete={() => {
-          setupHandlers.markComplete();
-          setShowSetupWizard(false);
-        }}
-        onSkip={() => setShowSetupWizard(false)}
+      <OnboardingWizard
+        projectScan={projectScan}
+        projectInfo={projectInfo}
+        scanLoading={scanLoading}
+        workflowMode={workflowMode}
+        onWorkflowModeChange={setWorkflowMode}
+        onScanProject={scanProject}
+        onSaveAgentsMd={handleSaveAgentsMd}
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingComplete}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" id="main-content" role="main">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold text-foreground">
-                Ralph Wiggum V3
+      <header className="border-b bg-card px-6 py-4" role="banner">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
+              W
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold">
+                <span className="text-primary">WIGGUM</span>
+                <span className="text-muted-foreground font-normal text-sm ml-2">R.A.L.P.H.</span>
               </h1>
-              <HealthIndicator
-                projectConfig={setupHandlers.projectConfig}
-                onClick={() => setActiveTab('setup')}
-              />
+              <p className="text-sm text-muted-foreground">
+                Recursive Autonomous Loop for Programming Humans
+              </p>
             </div>
-
-            {/* Connection Status */}
-            <div className="flex items-center gap-2">
-              {isConnected ? (
-                <div className="flex items-center gap-2 text-green-500">
-                  <Wifi className="h-4 w-4" />
-                  <span className="text-sm">Connected</span>
-                </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <WorkflowModeToggle
+              mode={workflowMode}
+              onToggle={setWorkflowMode}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '?mode=launcher'}
+              className="gap-2"
+              aria-label="Go to project launcher"
+            >
+              <Home className="h-4 w-4" aria-hidden="true" />
+              Launcher
+            </Button>
+            {gitStatus.repoName && (
+              <a
+                href={`https://github.com/${gitStatus.repoName}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Github className="h-4 w-4" />
+                {gitStatus.repoName}
+              </a>
+            )}
+            <Badge variant={connected ? 'success' : 'destructive'} className="gap-1">
+              {connected ? (
+                <>
+                  <Wifi className="h-3 w-3" />
+                  Connected
+                </>
               ) : (
-                <div className="flex items-center gap-2 text-red-500">
-                  <WifiOff className="h-4 w-4" />
-                  <span className="text-sm">{wsError || 'Disconnected'}</span>
-                  <button
-                    onClick={reconnect}
-                    className="p-1 hover:bg-muted rounded"
-                    title="Reconnect"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </button>
-                </div>
+                <>
+                  <WifiOff className="h-3 w-3" />
+                  Disconnected
+                </>
               )}
-            </div>
+            </Badge>
+            <Badge variant={loopStatus.running ? 'default' : 'secondary'}>
+              {loopStatus.running ? `Running: ${loopStatus.mode}` : 'Idle'}
+            </Badge>
           </div>
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-border bg-card">
-        <div className="container mx-auto px-4">
-          <nav className="flex gap-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-b-2 border-primary text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        {activeTab === 'dashboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Controls & Status */}
-            <div className="lg:col-span-1 space-y-6">
-              <LoopControls
-                loopStatus={loopHandlers.loopStatus}
-                onStart={loopHandlers.startLoop}
-                onStop={loopHandlers.stopLoop}
-                isConnected={isConnected}
-              />
-              <LoopStatus loopStatus={loopHandlers.loopStatus} />
-              <CostMeter costTracker={loopHandlers.costTracker} />
+      <div className="container mx-auto p-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="generate" className="gap-2">
+              <Wand2 className="h-4 w-4" />
+              Generate
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="gap-2">
+              <Terminal className="h-4 w-4" />
+              Logs
+            </TabsTrigger>
+            <TabsTrigger value="setup" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Setup
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Loop Controls */}
+            <LoopControls
+              loopStatus={loopStatus}
+              onStart={(options) => sendCommand({ type: 'loop:start', payload: options })}
+              onStop={() => sendCommand({ type: 'loop:stop' })}
+            />
+
+            {/* Existing Documents */}
+            <ExistingDocsViewer
+              projectConfig={projectConfig}
+              onReadFile={readConfigFile}
+              onNavigateToGenerate={(tab) => {
+                setActiveTab('generate');
+                setGenerateSubTab(tab);
+              }}
+              previewDoc={configPreviewDoc}
+              isLoadingPreview={configPreviewLoading}
+              onClosePreview={closeConfigPreview}
+              onRefresh={() => sendCommand({ type: 'config:refresh' })}
+            />
+
+            {/* Status Grid */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {/* Loop Status */}
+              <LoopStatus status={loopStatus} />
+
+              {/* Context Meter */}
+              <ContextMeter iteration={loopStatus.iteration} />
+
+              {/* Git Status */}
+              <GitHistory status={gitStatus} />
             </div>
 
-            {/* Right Column - Tasks & Logs */}
-            <div className="lg:col-span-2 space-y-6">
-              <TaskList tasks={tasks} />
-              <LogViewer
-                logs={loopHandlers.logs}
-                onClear={loopHandlers.clearLogs}
-                maxHeight="400px"
-              />
+            {/* Tasks */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <TaskList tasks={tasks} workflowMode={workflowMode} />
+              <div className="space-y-4">
+                <h3 className="flex items-center gap-2 text-lg font-semibold">
+                  <Terminal className="h-5 w-5" />
+                  Recent Logs
+                </h3>
+                <LogViewer logs={logs.slice(-20)} compact onClear={clearLogs} />
+              </div>
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {activeTab === 'logs' && (
-          <LogViewer
-            logs={loopHandlers.logs}
-            onClear={loopHandlers.clearLogs}
-            maxHeight="calc(100vh - 200px)"
-            showSearch
-          />
-        )}
+          {/* Generate Tab */}
+          <TabsContent value="generate">
+            <Tabs value={generateSubTab} onValueChange={(v) => setGenerateSubTab(v as 'plan' | 'review' | 'prd')} className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+                <TabsTrigger value="plan" className="gap-2">
+                  <ListTodo className="h-4 w-4" />
+                  Implementation Plan
+                </TabsTrigger>
+                <TabsTrigger value="review" className="gap-2">
+                  <FileSearch className="h-4 w-4" />
+                  Code Review
+                </TabsTrigger>
+                <TabsTrigger value="prd" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  PRD & Audience
+                </TabsTrigger>
+              </TabsList>
 
-        {activeTab === 'telemetry' && (
-          <TelemetryPanel
-            telemetryHistory={loopHandlers.telemetryHistory}
-            costTracker={loopHandlers.costTracker}
-          />
-        )}
+              <TabsContent value="plan">
+                <PlanGenerator
+                  planStatus={planStatus}
+                  planOutput={planOutput}
+                  planComplete={planComplete}
+                  planError={planError}
+                  onGeneratePlan={(options) =>
+                    sendCommand({ type: 'plan:generate', payload: options })
+                  }
+                  onCancelPlan={() => sendCommand({ type: 'plan:cancel' })}
+                  onInsertPlan={(content) =>
+                    sendCommand({
+                      type: 'config:write',
+                      payload: { file: 'IMPLEMENTATION_PLAN.md', content },
+                    })
+                  }
+                  onClearOutput={clearPlanOutput}
+                />
+              </TabsContent>
 
-        {activeTab === 'setup' && (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">Project Configuration</h2>
-              {setupHandlers.projectConfig ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-muted-foreground">Mode</label>
-                    <p className="font-medium capitalize">
-                      {setupHandlers.projectConfig.mode}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">
-                      Project Path
-                    </label>
-                    <p className="font-mono text-sm">
-                      {setupHandlers.projectConfig.path}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">
-                      Detection Reason
-                    </label>
-                    <p className="text-sm">
-                      {setupHandlers.projectConfig.detectionReason}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">Loading...</p>
-              )}
-            </div>
+              <TabsContent value="review">
+                <ReviewGenerator
+                  reviewStatus={reviewGeneratorStatus}
+                  reviewOutput={reviewGeneratorOutput}
+                  reviewComplete={reviewGeneratorComplete}
+                  reviewError={reviewGeneratorError}
+                  onGenerateReview={generateReview}
+                  onCancelReview={cancelReviewGenerator}
+                  onClearOutput={clearReviewGeneratorOutput}
+                  onSaveReport={(content) =>
+                    sendCommand({
+                      type: 'config:write',
+                      payload: { file: 'REVIEW_REPORT.md', content },
+                    })
+                  }
+                />
+              </TabsContent>
 
-            <button
-              onClick={() => setShowSetupWizard(true)}
-              className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-            >
-              Run Setup Wizard
-            </button>
-          </div>
-        )}
-      </main>
+              <TabsContent value="prd">
+                <PRDGenerator
+                  prdStatus={prdStatus}
+                  prdOutput={prdOutput}
+                  prdComplete={prdComplete}
+                  prdError={prdError}
+                  discoveredDocs={projectScan?.allMarkdownFiles || []}
+                  selectedDocPaths={selectedDocPaths}
+                  onDocSelectionChange={setSelectedDocPaths}
+                  onPreviewDoc={readDoc}
+                  previewDoc={previewDoc}
+                  isLoadingPreview={isLoadingPreview}
+                  onClosePreview={closeDocPreview}
+                  onGeneratePRD={(options) =>
+                    sendCommand({ type: 'prd:generate', payload: options })
+                  }
+                  onCancelPRD={() => sendCommand({ type: 'prd:cancel' })}
+                  onInsertPRD={(prd, audience) => {
+                    sendCommand({
+                      type: 'config:write',
+                      payload: { file: 'PRD.md', content: prd },
+                    });
+                    sendCommand({
+                      type: 'config:write',
+                      payload: { file: 'AUDIENCE_JTBD.md', content: audience },
+                    });
+                  }}
+                  onClearOutput={clearPrdOutput}
+                />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          {/* Logs Tab */}
+          <TabsContent value="logs">
+            <LogViewer logs={logs} onClear={clearLogs} />
+          </TabsContent>
+
+          {/* Setup Tab */}
+          <TabsContent value="setup">
+            <SetupWizard
+              projectConfig={projectConfig}
+              enabledAgents={enabledAgents}
+              availableAgents={availableAgents}
+              cursorRules={cursorRules}
+              agentsLoading={agentsLoading}
+              rulesLoading={rulesLoading}
+              gitStatus={gitStatus}
+              projectInfo={projectInfo}
+              claudeMdFiles={claudeMdFiles}
+              claudeMdContent={claudeMdContent}
+              claudeMdLoading={claudeMdLoading}
+              claudeMdApplying={claudeMdApplying}
+              onReadFile={(file) => sendCommand({ type: 'config:read', payload: { file } })}
+              onWriteFile={(file, content) =>
+                sendCommand({ type: 'config:write', payload: { file, content } })
+              }
+              onToggleAgent={(agentId, enabled) =>
+                sendCommand({ type: 'agents:toggle', payload: { agentId, enabled } })
+              }
+              onListAgents={listAgents}
+              onListRules={listRules}
+              onToggleRule={(ruleId, enabled) =>
+                sendCommand({ type: 'rules:toggle', payload: { ruleId, enabled } })
+              }
+              onListClaudeMdFiles={listClaudeMdFiles}
+              onReadClaudeMdFile={readClaudeMdFile}
+              onApplyRalphClaudeMd={applyRalphClaudeMd}
+              onCloseClaudeMdPreview={closeClaudeMdPreview}
+              onRunWizard={handleRunWizard}
+              dependencyStatus={dependencyStatus}
+              dependencyLoading={dependencyLoading}
+              onCheckDependencies={checkDependencies}
+              repoAgents={repoAgents}
+              repoAgentsLoading={repoAgentsLoading}
+              agentInstalling={agentInstalling}
+              onListRepoAgents={listRepoAgents}
+              onInstallAgentGlobal={installAgentGlobal}
+              onInstallAgentProject={installAgentProject}
+              onInstallAllAgentsGlobal={installAllAgentsGlobal}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
