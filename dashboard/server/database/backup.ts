@@ -25,7 +25,7 @@ export class DatabaseBackup {
   /**
    * Create a backup of the database
    */
-  static createBackup(description?: string): BackupInfo {
+  static async createBackup(description?: string): Promise<BackupInfo> {
     // Ensure backup directory exists
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
@@ -35,8 +35,8 @@ export class DatabaseBackup {
 
     const db = RalphDatabase.getInstance();
 
-    // Use SQLite backup API
-    db.backup(backupPath);
+    // Use SQLite backup API (returns a Promise)
+    await db.backup(backupPath);
 
     // Record backup in the database
     const now = new Date().toISOString();
@@ -187,7 +187,7 @@ export class DatabaseBackup {
   /**
    * Perform automatic daily backup if one hasn't been done today
    */
-  static performDailyBackupIfNeeded(): BackupInfo | null {
+  static async performDailyBackupIfNeeded(): Promise<BackupInfo | null> {
     const today = new Date().toISOString().split('T')[0];
 
     if (this.lastBackupDate === today) {

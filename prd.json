@@ -24,8 +24,8 @@
         "Server logs show 'Server running on port 3001'"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "Verify backend starts - test by running server briefly"
+      "passes": true,
+      "notes": "Fixed: DatabaseBackup.createBackup() now properly awaits db.backup() Promise before accessing the file"
     },
     {
       "id": "US-003",

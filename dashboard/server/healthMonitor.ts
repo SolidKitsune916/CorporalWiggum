@@ -62,8 +62,10 @@ export class HealthMonitor extends EventEmitter {
       this.performCheck();
     }, CHECK_INTERVAL_MS);
 
-    // Perform daily backup on startup if needed
-    DatabaseBackup.performDailyBackupIfNeeded();
+    // Perform daily backup on startup if needed (async, don't block startup)
+    DatabaseBackup.performDailyBackupIfNeeded().catch(err => {
+      console.error('[HealthMonitor] Failed to perform daily backup:', err);
+    });
   }
 
   /**

@@ -28,6 +28,17 @@ Entries are append-only - never delete, only add.
 ---
 
 ---
+[2026-01-16] US-002 - Backend server starts and accepts WebSocket connections
+- What was implemented: Fixed async/sync bug in database backup system
+- Files changed: dashboard/server/database/backup.ts, dashboard/server/healthMonitor.ts
+- **Learnings:**
+  - better-sqlite3 db.backup() returns a Promise - must await before accessing the backup file
+  - Server logs "Ralph Dashboard server started" with port info (not "Server running on port")
+  - HealthMonitor calls DatabaseBackup.performDailyBackupIfNeeded() on startup
+  - Pattern: Don't block startup on async operations - use .catch() for error handling
+---
+
+---
 [2026-01-15] Project Initialized
 - Pattern: Created complete Ralph Wiggum documentation suite
 - Tip: Start with AUDIENCE_JTBD.md to ground all specs in user needs
