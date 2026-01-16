@@ -37,8 +37,8 @@
         "Connection indicator shows status"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Verify frontend loads"
+      "passes": true,
+      "notes": "Verified: Vite serves index.html on 5173, Dashboard.tsx has Badge connection indicator"
     },
     {
       "id": "US-004",
