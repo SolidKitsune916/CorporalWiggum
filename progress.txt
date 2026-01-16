@@ -69,6 +69,27 @@ Entries are append-only - never delete, only add.
 ---
 
 ---
+[2026-01-16] US-006 - loop.sh respects workflow mode
+- What was verified: loop.sh mode detection and prompt selection
+- Files checked: loop.sh, PROMPT_simple.md, PROMPT_build.md
+- **Learnings:**
+  - loop.sh reads .ralph-mode at lines 29-35, defaults to 'simple'
+  - Simple mode uses PROMPT_simple.md, advanced uses PROMPT_build.md
+  - count_completed_tasks() and count_incomplete_tasks() handle both prd.json and IMPLEMENTATION_PLAN.md
+  - Status display at line 140 shows "Workflow: $WORKFLOW_MODE"
+---
+
+---
+[2026-01-16] US-007 - Project launcher loads and displays projects
+- What was verified: Launcher routing and ProjectCard display
+- Files checked: App.tsx, LauncherHome.tsx, ProjectCard.tsx
+- **Learnings:**
+  - App.tsx checks URL params for ?mode=launcher to show LauncherHome
+  - ProjectCard displays project name and path with status indicators
+  - Add Project button visible in launcher header
+---
+
+---
 [2026-01-15] Project Initialized
 - Pattern: Created complete Ralph Wiggum documentation suite
 - Tip: Start with AUDIENCE_JTBD.md to ground all specs in user needs

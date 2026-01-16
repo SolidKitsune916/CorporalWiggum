@@ -92,8 +92,8 @@
         "Project cards show project name and path"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": "Verify launcher basic functionality"
+      "passes": true,
+      "notes": "Verified: App.tsx routes ?mode=launcher to LauncherHome, ProjectCard shows name/path"
     },
     {
       "id": "US-008",
@@ -105,8 +105,8 @@
         "Continue button proceeds to scanning step"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": "Verify onboarding includes mode selection"
+      "passes": true,
+      "notes": "Verified: OnboardingWizard has mode step with Simple/Advanced cards, onWorkflowModeChange"
     },
     {
       "id": "US-009",
