@@ -15,7 +15,10 @@
       "Bash(npx tsc:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add automatic project initialization for Ralph files\n\n- Create templateManager.ts with default AGENTS.md and CLAUDE.md templates\n- Add project:init WebSocket handler to manually initialize projects\n- Update useLauncher hook with initializeProject function and init state\n- Add Setup button to ProjectCard for projects missing Ralph files\n- Show success notification in LauncherHome when files are created\n- Auto-initialization also triggers when spawning instances for unready projects\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npm install:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Skill(ralph-wiggum:ralph-loop)",
+      "Bash(npm run test:*)",
+      "Bash(npm run docs:build:*)"
     ]
   }
 }

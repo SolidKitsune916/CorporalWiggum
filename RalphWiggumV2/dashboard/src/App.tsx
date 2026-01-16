@@ -1,6 +1,7 @@
 import './index.css'
 import { Dashboard } from './components/Dashboard'
 import { LauncherHome } from './components/launcher/LauncherHome'
+import { AccessibilityProvider } from './components/AccessibilityProvider'
 
 /**
  * App - Main entry point that routes between Launcher and Dashboard views
@@ -20,11 +21,19 @@ function App() {
 
   // Show launcher if mode=launcher, otherwise show dashboard
   if (mode === 'launcher') {
-    return <LauncherHome />
+    return (
+      <AccessibilityProvider>
+        <LauncherHome />
+      </AccessibilityProvider>
+    )
   }
 
   // Pass custom backend port if specified (for multi-instance support)
-  return <Dashboard backendPort={backendPort ? parseInt(backendPort, 10) : undefined} />
+  return (
+    <AccessibilityProvider>
+      <Dashboard backendPort={backendPort ? parseInt(backendPort, 10) : undefined} />
+    </AccessibilityProvider>
+  )
 }
 
 export default App

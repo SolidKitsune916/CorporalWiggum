@@ -1,0 +1,22 @@
+{
+  "name": "ralph-wiggum",
+  "version": "3.0.0",
+  "description": "Autonomous AI Development Loop Dashboard",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/check-deps.js && npm run dev --prefix dashboard",
+    "setup": "bash scripts/setup.sh",
+    "dev": "npm run dev --prefix dashboard",
+    "build": "npm run build --prefix dashboard",
+    "check": "node scripts/check-deps.js"
+  },
+  "keywords": [
+    "ai",
+    "development",
+    "automation",
+    "claude",
+    "tdd"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -22,6 +22,10 @@ import { TemplateManager, type TemplateName } from './templateManager.js';
 import { RalphDatabase } from './database/index.js';
 import { getSessionRepository } from './database/repositories/SessionRepository.js';
 import { getHealthMonitor } from './healthMonitor.js';
+import { logger } from './lib/logger.js';
+import { metrics, METRICS } from './lib/metrics.js';
+import { sendAlert } from './lib/alerts.js';
+import { initSentry, captureError, flush as flushSentry } from './lib/sentry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,7 +95,7 @@ async function browseDirectory(dirPath: string): Promise<BrowseEntry[]> {
     });
 
   } catch (err) {
-    console.error(`Error reading directory ${dirPath}:`, err);
+    logger.error(`Error reading directory ${dirPath}`, { error: err instanceof Error ? err.message : 'Unknown error' });
     throw err;
   }
 
@@ -114,16 +118,19 @@ async function initializeProjectPaths(): Promise<ProjectRootResult> {
 
 // Start server after initialization
 async function startServer() {
+  // Initialize Sentry early
+  initSentry();
+
   const projectRoot = await initializeProjectPaths();
   const TARGET_PROJECT_PATH = projectRoot.targetProjectPath;
   const RALPH_PATH = projectRoot.ralphPath;
 
-  console.log('\n' + formatProjectInfo(projectRoot) + '\n');
+  logger.info('Project paths initialized', { projectRoot: formatProjectInfo(projectRoot) });
 
   // Initialize SQLite database
-  console.log('Initializing database...');
+  logger.info('Initializing database...');
   RalphDatabase.getInstance();
-  console.log(`Database: ${RalphDatabase.getDatabasePath()}`);
+  logger.info('Database initialized', { path: RalphDatabase.getDatabasePath() });
 
   const app = express();
   const server = createServer(app);
@@ -172,7 +179,8 @@ async function startServer() {
   // WebSocket connection handler
   wss.on('connection', (ws) => {
     clients.add(ws);
-    console.log('Client connected. Total clients:', clients.size);
+    metrics.setGauge(METRICS.WS_CONNECTIONS_ACTIVE, clients.size);
+    logger.info('Client connected', { totalClients: clients.size });
 
     // Send initial state
     ws.send(JSON.stringify({ type: 'loop:status', payload: loopController.getStatus() }));
@@ -183,8 +191,12 @@ async function startServer() {
 
     // Handle messages from client
     ws.on('message', async (data) => {
+      const messageStart = Date.now();
+      metrics.incCounter(METRICS.WS_MESSAGES_TOTAL);
+
       try {
         const message = JSON.parse(data.toString());
+        logger.debug('WebSocket message received', { type: message.type });
 
         switch (message.type) {
           case 'loop:start':
@@ -286,15 +298,16 @@ ${prdContent}
 ${audienceContent}
 `;
                 } catch (err) {
-                  console.warn('Could not read PRD files:', err);
+                  logger.warn('Could not read PRD files', { error: err instanceof Error ? err.message : 'Unknown error' });
                 }
               }
               await planGenerator.generatePlan({ ...message.payload, prdContext });
             } catch (err) {
-              console.error('Error generating plan:', err);
-              ws.send(JSON.stringify({ 
-                type: 'plan:error', 
-                payload: { error: err instanceof Error ? err.message : 'Failed to start plan generation' } 
+              logger.error('Error generating plan', { error: err instanceof Error ? err.message : 'Unknown error' });
+              captureError(err instanceof Error ? err : new Error(String(err)), { context: 'plan_generation' });
+              ws.send(JSON.stringify({
+                type: 'plan:error',
+                payload: { error: err instanceof Error ? err.message : 'Failed to start plan generation' }
               }));
             }
             break;
@@ -664,13 +677,16 @@ ${audienceContent}
             break;
         }
       } catch (err) {
-        console.error('Error handling message:', err);
+        logger.error('Error handling WebSocket message', { error: err instanceof Error ? err.message : 'Unknown error' });
+        metrics.incCounter(METRICS.WS_MESSAGES_TOTAL, { status: 'error' });
+        captureError(err instanceof Error ? err : new Error(String(err)), { context: 'websocket_message' });
       }
     });
 
     ws.on('close', () => {
       clients.delete(ws);
-      console.log('Client disconnected. Total clients:', clients.size);
+      metrics.setGauge(METRICS.WS_CONNECTIONS_ACTIVE, clients.size);
+      logger.info('Client disconnected', { totalClients: clients.size });
     });
   });
 
@@ -693,7 +709,7 @@ ${audienceContent}
       const updatedConfig = await projectConfig.refresh();
       broadcast({ type: 'config:update', payload: updatedConfig });
     } catch (err) {
-      console.error('Error refreshing config:', err);
+      logger.error('Error refreshing config', { error: err instanceof Error ? err.message : 'Unknown error' });
     }
   });
 
@@ -872,31 +888,36 @@ ${audienceContent}
   // Start server
   const PORT = process.env.PORT || 3001;
   server.listen(PORT, () => {
-    console.log(`Ralph Dashboard server running on port ${PORT}`);
-    console.log(`Target project: ${TARGET_PROJECT_PATH}`);
-    if (projectRoot.mode === 'embedded') {
-      console.log(`Ralph directory: ${RALPH_PATH}`);
-    }
+    logger.info('Ralph Dashboard server started', {
+      port: PORT,
+      targetProject: TARGET_PROJECT_PATH,
+      ralphDirectory: projectRoot.mode === 'embedded' ? RALPH_PATH : undefined,
+      mode: projectRoot.mode,
+    });
   });
 
   // Cleanup on exit
   process.on('SIGINT', async () => {
-    console.log('Shutting down...');
+    logger.info('Shutting down server...');
     fileWatcher.stop();
     loopController.stop();
     // Stop health monitor
     healthMonitor.stop();
     // Stop all spawned instances
     await instanceSpawner.stopAll();
+    // Flush Sentry events
+    await flushSentry();
     // Close database
     RalphDatabase.close();
     server.close();
+    logger.info('Server shutdown complete');
     process.exit(0);
   });
 }
 
 // Start the server
 startServer().catch((err) => {
-  console.error('Failed to start server:', err);
+  logger.fatal('Failed to start server', { error: err instanceof Error ? err.message : 'Unknown error' });
+  sendAlert('Server Startup Failed', err instanceof Error ? err.message : 'Unknown error', 'critical', 'server');
   process.exit(1);
 });

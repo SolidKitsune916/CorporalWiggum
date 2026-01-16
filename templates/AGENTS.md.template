@@ -1,0 +1,16 @@
+# Project Configuration
+
+## Build Commands
+
+- Build: `[build-command]`
+- Dev: `[dev-command]`
+- Test: `[test-command]`
+
+## Validation Commands
+
+- Typecheck: `[typecheck-command]`
+- Lint: `[lint-command]`
+
+## Operational Notes
+
+[Add project-specific patterns and guidelines here]

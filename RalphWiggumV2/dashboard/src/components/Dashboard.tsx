@@ -158,9 +158,9 @@ export function Dashboard({ backendPort }: DashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" id="main-content" role="main">
       {/* Header */}
-      <header className="border-b bg-card px-6 py-4">
+      <header className="border-b bg-card px-6 py-4" role="banner">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
@@ -182,8 +182,9 @@ export function Dashboard({ backendPort }: DashboardProps) {
               size="sm"
               onClick={() => window.location.href = '?mode=launcher'}
               className="gap-2"
+              aria-label="Go to project launcher"
             >
-              <Home className="h-4 w-4" />
+              <Home className="h-4 w-4" aria-hidden="true" />
               Launcher
             </Button>
             {gitStatus.repoName && (

@@ -68,4 +68,71 @@
     @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
+
+  /* Accessibility: Enhanced focus styles for keyboard navigation */
+  :focus-visible {
+    @apply outline-none ring-2 ring-[hsl(180,100%,45%)] ring-offset-2 ring-offset-background;
+  }
+
+  /* Accessibility: Screen reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Accessibility: Allow sr-only elements to become visible on focus */
+  .sr-only:focus,
+  .sr-only:focus-within {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* Accessibility: Skip to content link styles */
+  .focus\:not-sr-only:focus {
+    position: absolute !important;
+    width: auto !important;
+    height: auto !important;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+  }
+
+  /* Accessibility: High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --foreground: 0 0% 0%;
+      --background: 0 0% 100%;
+    }
+    .dark {
+      --foreground: 0 0% 100%;
+      --background: 0 0% 0%;
+    }
+  }
+
+  /* Accessibility: Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
