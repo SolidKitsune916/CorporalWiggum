@@ -170,6 +170,25 @@ if ! command -v claude &> /dev/null; then
     exit 1
 fi
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Session-based Log Rotation
+# ═══════════════════════════════════════════════════════════════════════════════
+# Create logs directory if it doesn't exist
+LOG_DIR="logs"
+mkdir -p "$LOG_DIR"
+
+# Generate session-based log filename with timestamp
+SESSION_TIMESTAMP=$(date +%Y-%m-%dT%H-%M-%S)
+SESSION_LOG="$LOG_DIR/session-${SESSION_TIMESTAMP}.log"
+OUTPUT_LOG="$SESSION_LOG"
+
+# Create symlink for backwards compatibility
+# Remove old symlink if it exists
+rm -f ralph.log 2>/dev/null || true
+ln -sf "$SESSION_LOG" ralph.log
+
+echo "Session log: $SESSION_LOG"
+
 # Detect if --model flag is supported (Windows/MSYS or explicitly enabled)
 # macOS may have older CLI versions that don't support this flag
 MODEL_FLAG=""
@@ -532,7 +551,7 @@ while true; do
     # --model opus: Primary agent uses Opus for complex reasoning (task selection, prioritization)
     #               Can use 'sonnet' in build mode for speed if plan is clear and tasks well-defined
     # --verbose: Detailed execution logging
-    OUTPUT_LOG="ralph.log"
+    # Note: OUTPUT_LOG is set at startup to session-based log file
 
     # For plan-work mode, substitute ${WORK_SCOPE} in prompt before piping
     if [ "$MODE" = "plan-work" ]; then

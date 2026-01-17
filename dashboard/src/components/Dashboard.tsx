@@ -486,6 +486,7 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
               <TabsContent value="stories">
                 <StoriesGenerator
+                  key={storiesComplete ? 'stories-loaded' : 'stories-empty'}
                   hasPrd={projectConfig?.hasPRD ?? false}
                   isGenerating={storiesGenerating}
                   output={storiesOutput}

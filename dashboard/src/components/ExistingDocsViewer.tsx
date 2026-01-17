@@ -8,6 +8,7 @@ import {
   CheckCircle,
   XCircle,
   Eye,
+  Edit,
   Wand2,
   Loader2,
   X,
@@ -26,6 +27,7 @@ interface DocFile {
 interface ExistingDocsViewerProps {
   projectConfig: ProjectConfig | null;
   onReadFile: (filename: string) => void;
+  onEditFile?: (filename: string) => void;
   onNavigateToGenerate: (tab: 'plan' | 'prd') => void;
   previewDoc: { file: string; content: string } | null;
   isLoadingPreview: boolean;
@@ -36,6 +38,7 @@ interface ExistingDocsViewerProps {
 export function ExistingDocsViewer({
   projectConfig,
   onReadFile,
+  onEditFile,
   onNavigateToGenerate,
   previewDoc,
   isLoadingPreview,
@@ -139,15 +142,28 @@ export function ExistingDocsViewer({
                 </div>
                 <div className="flex items-center gap-2">
                   {doc.exists ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onReadFile(doc.name)}
-                      className="gap-1.5"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onReadFile(doc.name)}
+                        className="gap-1.5"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View
+                      </Button>
+                      {onEditFile && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEditFile(doc.name)}
+                          className="gap-1.5"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </Button>
+                      )}
+                    </>
                   ) : doc.generateTab ? (
                     <Button
                       variant="ghost"

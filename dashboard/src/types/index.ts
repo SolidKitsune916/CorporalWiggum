@@ -70,6 +70,7 @@ export interface LogEntry {
 
 export interface ProjectConfig {
   projectPath: string;
+  projectId?: string;  // Unique ID for project (for external repos lookup)
   hasAgentsMd: boolean;
   hasClaudeMd: boolean;
   hasImplementationPlan: boolean;
@@ -78,6 +79,9 @@ export interface ProjectConfig {
   hasSpecs: boolean;
   hasCursorRules: boolean;
   hasLoopSh: boolean;
+  hasReadme: boolean;
+  hasPrdJson: boolean;
+  hasProgressTxt: boolean;
   enabledAgents: string[];
 }
 
@@ -183,6 +187,14 @@ export interface ConfigContentMessage extends WSMessage {
   payload: {
     file: string;
     content: string;
+  };
+}
+
+export interface ConfigErrorMessage extends WSMessage {
+  type: 'config:error';
+  payload: {
+    file: string;
+    error: string;
   };
 }
 
@@ -310,6 +322,7 @@ export type ServerMessage =
   | ConfigMessage
   | ConfigSavedMessage
   | ConfigContentMessage
+  | ConfigErrorMessage
   | AgentsUpdateMessage
   | AgentsListResultMessage
   | RulesListResultMessage
@@ -364,7 +377,45 @@ export type ServerMessage =
   | ModeUpdatedMessage
   | PortsListMessage
   | PortsKilledMessage
-  | PortsErrorMessage;
+  | PortsErrorMessage
+  | LogsListMessage
+  | LogsContentMessage
+  | LogsDeletedMessage
+  | LogsCleanupResultMessage
+  | LogsErrorMessage
+  | TroubleshootStatusMessage
+  | TroubleshootOutputMessage
+  | TroubleshootCompleteMessage
+  | TroubleshootCancelledMessage
+  | TroubleshootErrorMessage
+  | StoriesStatusMessage
+  | StoriesOutputMessage
+  | StoriesCompleteMessage
+  | StoriesSavedMessage
+  | StoriesCancelledMessage
+  | StoriesErrorMessage
+  | PRDInterviewVersionsMessage
+  | PRDInterviewSessionMessage
+  | PRDInterviewAnalysisMessage
+  | PRDInterviewQuestionsMessage
+  | PRDInterviewStatusMessage
+  | PRDInterviewOutputMessage
+  | PRDInterviewCompleteMessage
+  | PRDInterviewCancelledMessage
+  | PRDInterviewErrorMessage
+  | ExternalReposListMessage
+  | ExternalReposAddedMessage
+  | ExternalReposUpdatedMessage
+  | ExternalReposRemovedMessage
+  | ExternalReposFetchedMessage
+  | ExternalReposCacheStatusMessage
+  | ExternalReposCacheClearedMessage
+  | ExternalReposMcpStatusMessage
+  | ExternalReposUrlValidatedMessage
+  | ExternalReposTokenValidatedMessage
+  | ExternalReposTokenSetMessage
+  | ExternalReposCacheStatsMessage
+  | ExternalReposErrorMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -429,6 +480,7 @@ export interface GeneratePRDCommand {
   type: 'prd:generate';
   payload: {
     productName: string;
+    overallDescription: string;  // High-level description of the application
     problemStatement: string;
     targetAudience: string;
     keyCapabilities: string[];
@@ -734,7 +786,46 @@ export type ClientCommand =
   | ModeGetCommand
   | ModeSetCommand
   | PortsScanCommand
-  | PortsKillCommand;
+  | PortsKillCommand
+  | LogsListCommand
+  | LogsReadCommand
+  | LogsDeleteCommand
+  | LogsCleanupCommand
+  | TroubleshootLaunchCommand
+  | TroubleshootCancelCommand
+  | StoriesGenerateCommand
+  | StoriesCancelCommand
+  | StoriesSaveCommand
+  | TemplateCreateCommand
+  | PRDInterviewCheckVersionsCommand
+  | PRDInterviewStartCommand
+  | PRDInterviewAnalyzeCodebaseCommand
+  | PRDInterviewAnswerCommand
+  | PRDInterviewMoreQuestionsCommand
+  | PRDInterviewGenerateCommand
+  | PRDInterviewCancelCommand
+  | PRDInterviewResumeCommand
+  | PRDInterviewClearCommand
+  | ExternalReposListCommand
+  | ExternalReposAddCommand
+  | ExternalReposUpdateCommand
+  | ExternalReposRemoveCommand
+  | ExternalReposFetchCommand
+  | ExternalReposCacheStatusCommand
+  | ExternalReposClearCacheCommand
+  | ExternalReposMcpStatusCommand
+  | ExternalReposValidateUrlCommand
+  | ExternalReposValidateTokenCommand
+  | ExternalReposSetTokenCommand
+  | ExternalReposCacheStatsCommand;
+
+// Template creation command
+export interface TemplateCreateCommand {
+  type: 'template:create';
+  payload: {
+    template: string;
+  };
+}
 
 // Workflow mode commands
 export interface ModeGetCommand {
@@ -958,6 +1049,7 @@ export interface ReviewConfig {
 // Result of a review
 export interface ReviewResult {
   pass: boolean;
+  score?: number;        // Optional score out of 100
   feedback?: string;     // Only present when pass=false
   criteria: string;
   reviewedAt: string;    // ISO date string
@@ -1144,4 +1236,685 @@ export interface PortsErrorMessage extends WSMessage {
   payload: {
     error: string;
   };
+}
+
+// ============================================================================
+// Log Management Types (Feature Set: Log History)
+// ============================================================================
+
+// A log session file
+export interface LogSession {
+  filename: string;
+  timestamp: string;
+  size: number;
+  date: string;  // ISO date string
+  isActive: boolean;
+}
+
+// Log list WebSocket command
+export interface LogsListCommand {
+  type: 'logs:list';
+}
+
+// Log read WebSocket command
+export interface LogsReadCommand {
+  type: 'logs:read';
+  payload: {
+    filename: string;
+  };
+}
+
+// Log delete WebSocket command
+export interface LogsDeleteCommand {
+  type: 'logs:delete';
+  payload: {
+    filename: string;
+  };
+}
+
+// Log cleanup WebSocket command
+export interface LogsCleanupCommand {
+  type: 'logs:cleanup';
+  payload: {
+    keepDays: number;
+  };
+}
+
+// Log list WebSocket message (response to list)
+export interface LogsListMessage extends WSMessage {
+  type: 'logs:list';
+  payload: LogSession[];
+}
+
+// Log content WebSocket message (response to read)
+export interface LogsContentMessage extends WSMessage {
+  type: 'logs:content';
+  payload: {
+    filename: string;
+    content: string;
+  };
+}
+
+// Log deleted WebSocket message (response to delete)
+export interface LogsDeletedMessage extends WSMessage {
+  type: 'logs:deleted';
+  payload: {
+    filename: string;
+  };
+}
+
+// Log cleanup result WebSocket message
+export interface LogsCleanupResultMessage extends WSMessage {
+  type: 'logs:cleanup:result';
+  payload: {
+    deletedCount: number;
+  };
+}
+
+// Log error WebSocket message
+export interface LogsErrorMessage extends WSMessage {
+  type: 'logs:error';
+  payload: {
+    error: string;
+  };
+}
+
+// ============================================================================
+// Troubleshoot Types (Feature: Claude CLI Troubleshooting)
+// ============================================================================
+
+// Troubleshoot launch WebSocket command
+export interface TroubleshootLaunchCommand {
+  type: 'troubleshoot:launch';
+  payload: {
+    errorLog: string;
+  };
+}
+
+// Troubleshoot cancel WebSocket command
+export interface TroubleshootCancelCommand {
+  type: 'troubleshoot:cancel';
+}
+
+// Troubleshoot status WebSocket message
+export interface TroubleshootStatusMessage extends WSMessage {
+  type: 'troubleshoot:status';
+  payload: {
+    running: boolean;
+    startedAt: string | null;
+  };
+}
+
+// Troubleshoot output WebSocket message (streaming)
+export interface TroubleshootOutputMessage extends WSMessage {
+  type: 'troubleshoot:output';
+  payload: {
+    text: string;
+  };
+}
+
+// Troubleshoot complete WebSocket message
+export interface TroubleshootCompleteMessage extends WSMessage {
+  type: 'troubleshoot:complete';
+  payload: {
+    success: boolean;
+    output: string;
+  };
+}
+
+// Troubleshoot cancelled WebSocket message
+export interface TroubleshootCancelledMessage extends WSMessage {
+  type: 'troubleshoot:cancelled';
+}
+
+// Troubleshoot error WebSocket message
+export interface TroubleshootErrorMessage extends WSMessage {
+  type: 'troubleshoot:error';
+  payload: {
+    error: string;
+  };
+}
+
+// ============================================================================
+// Stories Generator Types (Feature: PRD.md to prd.json conversion)
+// ============================================================================
+
+// Note: UserStory interface is defined at the top of this file
+
+// prd.json structure (uses UserStory from above)
+export interface PrdJson {
+  branchName: string;
+  userStories: UserStory[];
+}
+
+// Stories generator status
+export interface StoriesGeneratorStatus {
+  generating: boolean;
+  startedAt: string | null;
+}
+
+// Stories generate WebSocket command
+export interface StoriesGenerateCommand {
+  type: 'stories:generate';
+}
+
+// Stories cancel WebSocket command
+export interface StoriesCancelCommand {
+  type: 'stories:cancel';
+}
+
+// Stories save WebSocket command
+export interface StoriesSaveCommand {
+  type: 'stories:save';
+  payload: {
+    prdJson: PrdJson;
+  };
+}
+
+// Stories status WebSocket message
+export interface StoriesStatusMessage extends WSMessage {
+  type: 'stories:status';
+  payload: StoriesGeneratorStatus;
+}
+
+// Stories output WebSocket message (streaming)
+export interface StoriesOutputMessage extends WSMessage {
+  type: 'stories:output';
+  payload: {
+    text: string;
+  };
+}
+
+// Stories complete WebSocket message
+export interface StoriesCompleteMessage extends WSMessage {
+  type: 'stories:complete';
+  payload: PrdJson;
+}
+
+// Stories saved WebSocket message
+export interface StoriesSavedMessage extends WSMessage {
+  type: 'stories:saved';
+  payload: {
+    success: boolean;
+  };
+}
+
+// Stories cancelled WebSocket message
+export interface StoriesCancelledMessage extends WSMessage {
+  type: 'stories:cancelled';
+}
+
+// Stories error WebSocket message
+export interface StoriesErrorMessage extends WSMessage {
+  type: 'stories:error';
+  payload: {
+    error: string;
+  };
+}
+
+// ============================================================================
+// Iterative PRD Generator Types (Feature: Q&A Interview + Versioning)
+// ============================================================================
+
+// PRD Version information
+export interface PRDVersion {
+  version: number;           // 1, 2, 3, etc.
+  filename: string;          // PRD_v1.md
+  audienceFilename: string;  // AUDIENCE_JTBD_v1.md
+  createdAt: string;         // ISO date string
+  description: string;       // Brief summary of what this version added
+}
+
+// PRD Version history
+export interface PRDVersionHistory {
+  versions: PRDVersion[];
+  latestVersion: number;
+}
+
+// Codebase analysis result
+export interface CodebaseAnalysis {
+  // From ProjectScanner
+  techStack: string[];
+  fileCount: number;
+  hasTests: boolean;
+  hasApi: boolean;
+  
+  // From Claude analysis
+  summary: string;              // High-level description
+  keyComponents: string[];      // Main modules/features identified
+  architectureNotes: string;    // Architecture observations
+  suggestedFocus: string[];     // Areas Claude thinks need attention
+}
+
+// Question category type
+export type PRDQuestionCategory = 'technical' | 'users' | 'features' | 'scope' | 'integration' | 'other';
+
+// Individual question in Q&A
+export interface PRDQuestion {
+  id: string;
+  text: string;
+  category?: PRDQuestionCategory;
+  answer?: string;
+  skipped: boolean;
+}
+
+// A round of Q&A
+export interface PRDQuestionRound {
+  roundNumber: number;
+  questions: PRDQuestion[];
+  submittedAt?: string;  // ISO date string
+}
+
+// Phase of the PRD interview
+export type PRDInterviewPhase = 'version-select' | 'input' | 'analyzing' | 'questions' | 'generating' | 'complete';
+
+// Full PRD interview session
+export interface PRDSession {
+  id: string;
+  createdAt: string;         // ISO date string
+  updatedAt: string;         // ISO date string
+  
+  // Version info
+  targetVersion: number;           // Version being created
+  previousVersions: number[];      // Selected previous versions for context
+  
+  // Phase tracking
+  phase: PRDInterviewPhase;
+  
+  // Input data
+  description: string;
+  additionalContext?: string;      // Free text pasted by user (rough draft PRD, specs, etc.)
+  contextDocs: string[];
+  
+  // Codebase analysis
+  codebaseAnalysis?: CodebaseAnalysis;
+  
+  // Q&A rounds
+  rounds: PRDQuestionRound[];
+  
+  // Output
+  finalPrd?: string;
+  finalAudience?: string;
+}
+
+// PRD Interview status for UI
+export interface PRDInterviewStatus {
+  hasSession: boolean;
+  session?: PRDSession;
+  versions: PRDVersion[];
+  analyzing: boolean;
+  generating: boolean;
+}
+
+// --- PRD Interview Commands (Client -> Server) ---
+
+export interface PRDInterviewCheckVersionsCommand {
+  type: 'prd-interview:check-versions';
+}
+
+export interface PRDInterviewStartCommand {
+  type: 'prd-interview:start';
+  payload: {
+    description: string;
+    additionalContext?: string;  // Free text pasted by user (rough draft PRD, specs, etc.)
+    contextDocs: string[];
+    previousVersions: number[];  // Which versions to use as context
+    startFresh: boolean;         // true = start from v1, false = continue from latest
+    skipQuestions?: boolean;     // If true, go directly to PRD generation
+  };
+}
+
+export interface PRDInterviewAnalyzeCodebaseCommand {
+  type: 'prd-interview:analyze-codebase';
+}
+
+export interface PRDInterviewAnswerCommand {
+  type: 'prd-interview:answer';
+  payload: {
+    roundNumber: number;
+    answers: Array<{ questionId: string; answer?: string; skipped: boolean }>;
+  };
+}
+
+export interface PRDInterviewMoreQuestionsCommand {
+  type: 'prd-interview:more';
+}
+
+export interface PRDInterviewGenerateCommand {
+  type: 'prd-interview:generate';
+}
+
+export interface PRDInterviewCancelCommand {
+  type: 'prd-interview:cancel';
+}
+
+export interface PRDInterviewResumeCommand {
+  type: 'prd-interview:resume';
+}
+
+export interface PRDInterviewClearCommand {
+  type: 'prd-interview:clear';
+}
+
+// --- PRD Interview Messages (Server -> Client) ---
+
+export interface PRDInterviewVersionsMessage extends WSMessage {
+  type: 'prd-interview:versions';
+  payload: PRDVersionHistory;
+}
+
+export interface PRDInterviewSessionMessage extends WSMessage {
+  type: 'prd-interview:session';
+  payload: PRDSession;
+}
+
+export interface PRDInterviewAnalysisMessage extends WSMessage {
+  type: 'prd-interview:analysis';
+  payload: CodebaseAnalysis;
+}
+
+export interface PRDInterviewQuestionsMessage extends WSMessage {
+  type: 'prd-interview:questions';
+  payload: {
+    roundNumber: number;
+    questions: PRDQuestion[];
+  };
+}
+
+export interface PRDInterviewStatusMessage extends WSMessage {
+  type: 'prd-interview:status';
+  payload: {
+    phase: PRDInterviewPhase;
+    analyzing: boolean;
+    generating: boolean;
+  };
+}
+
+export interface PRDInterviewOutputMessage extends WSMessage {
+  type: 'prd-interview:output';
+  payload: { text: string };
+}
+
+export interface PRDInterviewCompleteMessage extends WSMessage {
+  type: 'prd-interview:complete';
+  payload: {
+    version: PRDVersion;
+    prd: string;
+    audience: string;
+  };
+}
+
+export interface PRDInterviewCancelledMessage extends WSMessage {
+  type: 'prd-interview:cancelled';
+}
+
+export interface PRDInterviewErrorMessage extends WSMessage {
+  type: 'prd-interview:error';
+  payload: { error: string };
+}
+
+// ============================================================================
+// External Repository Types (Feature: Dynamic GitHub Repo References)
+// ============================================================================
+
+/**
+ * Fetch strategy for external repositories
+ */
+export type RepoFetchStrategy =
+  | 'readme-only'      // Just README.md
+  | 'docs-folder'      // README + docs/*.md
+  | 'specified'        // User-defined paths
+  | 'auto'             // Auto-detect key files
+  | 'typescript-lib'   // TypeScript library profile
+  | 'python-lib'       // Python library profile
+  | 'full-clone'       // Clone entire repo
+  | 'mcp-only'         // MCP queries only (minimal static)
+  | 'hybrid';          // Core files + MCP queries
+
+/**
+ * External repository reference (stored in project settings)
+ */
+export interface ExternalRepoReference {
+  id: string;                     // UUID
+  url: string;                    // https://github.com/owner/repo
+  alias: string;                  // Display name
+  branch?: string;                // Default: auto-detected
+
+  // Fetch configuration
+  fetchStrategy: RepoFetchStrategy;
+  paths?: string[];               // For 'specified' strategy
+  mcpHints?: string[];            // For 'mcp-only' or 'hybrid'
+
+  // Limits
+  maxTokens?: number;             // Default: 50000 chars
+
+  // Metadata
+  purpose?: string;               // Why this repo is referenced
+  addedAt: string;                // ISO date
+  lastFetchedAt?: string;         // ISO date
+  cachedCommitSha?: string;       // For freshness checking
+
+  // Cache settings (per-repo override)
+  cacheTTLHours?: number;         // Override default (24h)
+  disableCache?: boolean;         // Always fetch fresh
+}
+
+/**
+ * Cache status for a repository
+ */
+export interface RepoCacheStatus {
+  cached: boolean;
+  fresh: boolean;
+  reason?: 'not_cached' | 'ttl_expired' | 'new_commits' | 'fresh';
+  localSha?: string;
+  remoteSha?: string;
+  sizeBytes?: number;
+  extractedProfiles?: string[];
+}
+
+/**
+ * Cache statistics for external repos
+ */
+export interface RepoCacheStats {
+  totalEntries: number;
+  totalSize: number;
+  totalSizeFormatted: string;
+}
+
+/**
+ * Fetched file from external repository
+ */
+export interface FetchedFile {
+  path: string;
+  content: string;
+  size: number;
+  truncated: boolean;
+}
+
+/**
+ * Fetched repository content
+ */
+export interface FetchedRepoContent {
+  repoId: string;
+  repoAlias: string;
+  repoUrl: string;
+  commitSha: string;
+  fromCache: boolean;
+  files: FetchedFile[];
+  totalSize: number;
+  fetchedAt: string;
+  mcpInstructions?: string[];
+  error?: string;
+}
+
+/**
+ * GitHub MCP configuration status
+ */
+export interface GitHubMcpConfig {
+  enabled: boolean;
+  tokenConfigured: boolean;
+  reposWithMcp: string[];
+}
+
+// --- External Repos Commands (Client -> Server) ---
+
+export interface ExternalReposListCommand {
+  type: 'external-repos:list';
+  payload: { projectId: string };
+}
+
+export interface ExternalReposAddCommand {
+  type: 'external-repos:add';
+  payload: {
+    projectId: string;
+    url: string;
+    alias: string;
+    branch?: string;
+    fetchStrategy?: RepoFetchStrategy;
+    paths?: string[];
+    mcpHints?: string[];
+    maxTokens?: number;
+    purpose?: string;
+    cacheTTLHours?: number;
+    disableCache?: boolean;
+  };
+}
+
+export interface ExternalReposUpdateCommand {
+  type: 'external-repos:update';
+  payload: {
+    projectId: string;
+    repoId: string;
+    [key: string]: unknown;
+  };
+}
+
+export interface ExternalReposRemoveCommand {
+  type: 'external-repos:remove';
+  payload: { projectId: string; repoId: string };
+}
+
+export interface ExternalReposFetchCommand {
+  type: 'external-repos:fetch';
+  payload: { projectId: string; repoIds: string[]; forceRefresh?: boolean };
+}
+
+export interface ExternalReposCacheStatusCommand {
+  type: 'external-repos:cache-status';
+  payload: { projectId: string; repoIds?: string[] };
+}
+
+export interface ExternalReposClearCacheCommand {
+  type: 'external-repos:clear-cache';
+  payload: { projectId: string; repoIds?: string[] };
+}
+
+export interface ExternalReposMcpStatusCommand {
+  type: 'external-repos:mcp-status';
+  payload: { projectId: string };
+}
+
+export interface ExternalReposValidateUrlCommand {
+  type: 'external-repos:validate-url';
+  payload: { url: string };
+}
+
+export interface ExternalReposValidateTokenCommand {
+  type: 'external-repos:validate-token';
+  payload: { token: string };
+}
+
+export interface ExternalReposSetTokenCommand {
+  type: 'external-repos:set-token';
+  payload: { token: string };
+}
+
+export interface ExternalReposCacheStatsCommand {
+  type: 'external-repos:cache-stats';
+}
+
+// --- External Repos Messages (Server -> Client) ---
+
+export interface ExternalReposListMessage extends WSMessage {
+  type: 'external-repos:list';
+  payload: ExternalRepoReference[];
+}
+
+export interface ExternalReposAddedMessage extends WSMessage {
+  type: 'external-repos:added';
+  payload: ExternalRepoReference;
+}
+
+export interface ExternalReposUpdatedMessage extends WSMessage {
+  type: 'external-repos:updated';
+  payload: ExternalRepoReference;
+}
+
+export interface ExternalReposRemovedMessage extends WSMessage {
+  type: 'external-repos:removed';
+  payload: { repoId: string };
+}
+
+export interface ExternalReposFetchedMessage extends WSMessage {
+  type: 'external-repos:fetched';
+  payload: {
+    contents: FetchedRepoContent[];
+    summary: string;
+  };
+}
+
+export interface ExternalReposCacheStatusMessage extends WSMessage {
+  type: 'external-repos:cache-status';
+  payload: Record<string, RepoCacheStatus>;
+}
+
+export interface ExternalReposCacheClearedMessage extends WSMessage {
+  type: 'external-repos:cache-cleared';
+  payload: { repoIds: string[] | 'all' };
+}
+
+export interface ExternalReposMcpStatusMessage extends WSMessage {
+  type: 'external-repos:mcp-status';
+  payload: GitHubMcpConfig;
+}
+
+export interface ExternalReposUrlValidatedMessage extends WSMessage {
+  type: 'external-repos:url-validated';
+  payload: {
+    valid: boolean;
+    owner?: string;
+    repo?: string;
+    defaultBranch?: string;
+    error?: string;
+  };
+}
+
+export interface ExternalReposTokenValidatedMessage extends WSMessage {
+  type: 'external-repos:token-validated';
+  payload: {
+    valid: boolean;
+    login?: string;
+    scopes?: string[];
+    error?: string;
+  };
+}
+
+export interface ExternalReposTokenSetMessage extends WSMessage {
+  type: 'external-repos:token-set';
+  payload: {
+    success: boolean;
+    login?: string;
+    scopes?: string[];
+    error?: string;
+  };
+}
+
+export interface ExternalReposCacheStatsMessage extends WSMessage {
+  type: 'external-repos:cache-stats';
+  payload: RepoCacheStats;
+}
+
+export interface ExternalReposErrorMessage extends WSMessage {
+  type: 'external-repos:error';
+  payload: { error: string; repoId?: string };
 }

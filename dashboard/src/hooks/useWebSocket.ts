@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode, ReviewRunnerStatus, ReviewConfig, ReviewResult, PortProcess } from '@/types';
+import { toast } from 'sonner';
+import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode, ReviewRunnerStatus, ReviewConfig, ReviewResult, PortProcess, LogSession, PrdJson, PRDSession, PRDVersionHistory, CodebaseAnalysis, PRDQuestion, PRDInterviewPhase, PRDVersion, ExternalRepoReference, RepoCacheStatus, FetchedRepoContent, GitHubMcpConfig, RepoCacheStats } from '@/types';
 
 interface UseWebSocketReturn {
   connected: boolean;
@@ -102,6 +103,73 @@ interface UseWebSocketReturn {
   portsError: string | null;
   scanPorts: () => void;
   killPort: (pid: number) => void;
+  // Log management state and handlers
+  logSessions: LogSession[];
+  logsLoading: boolean;
+  logsError: string | null;
+  logContent: { filename: string; content: string } | null;
+  logContentLoading: boolean;
+  listLogs: () => void;
+  readLog: (filename: string) => void;
+  deleteLog: (filename: string) => void;
+  cleanupLogs: (keepDays: number) => void;
+  // Troubleshoot state and handlers
+  troubleshootRunning: boolean;
+  troubleshootOutput: string;
+  troubleshootError: string | null;
+  launchTroubleshoot: (errorLog: string) => void;
+  cancelTroubleshoot: () => void;
+  clearTroubleshootOutput: () => void;
+  // Stories generator state and handlers
+  storiesGenerating: boolean;
+  storiesOutput: string;
+  storiesComplete: PrdJson | null;
+  storiesError: string | null;
+  generateStories: () => void;
+  cancelStories: () => void;
+  saveStories: (prdJson: PrdJson) => void;
+  clearStoriesOutput: () => void;
+  // Iterative PRD generator state and handlers
+  prdInterviewSession: PRDSession | null;
+  prdVersionHistory: PRDVersionHistory | null;
+  prdInterviewAnalysis: CodebaseAnalysis | null;
+  prdInterviewQuestions: { roundNumber: number; questions: PRDQuestion[] } | null;
+  prdInterviewStatus: { phase: PRDInterviewPhase; analyzing: boolean; generating: boolean };
+  prdInterviewOutput: string;
+  prdInterviewComplete: { version: PRDVersion; prd: string; audience: string } | null;
+  prdInterviewError: string | null;
+  checkPrdVersions: () => void;
+  startPrdInterview: (description: string, contextDocs: string[], previousVersions: number[], startFresh: boolean, additionalContext?: string, skipQuestions?: boolean) => void;
+  analyzePrdCodebase: () => void;
+  submitPrdAnswers: (roundNumber: number, answers: Array<{ questionId: string; answer?: string; skipped: boolean }>) => void;
+  requestMorePrdQuestions: () => void;
+  generatePrdFromInterview: () => void;
+  cancelPrdInterview: () => void;
+  resumePrdSession: () => void;
+  clearPrdSession: () => void;
+  clearPrdInterviewOutput: () => void;
+  // External repos state and handlers
+  externalRepos: ExternalRepoReference[];
+  externalReposLoading: boolean;
+  externalReposCacheStatus: Record<string, RepoCacheStatus>;
+  externalReposMcpStatus: GitHubMcpConfig | null;
+  externalReposCacheStats: RepoCacheStats | null;
+  externalReposFetching: boolean;
+  externalReposError: string | null;
+  listExternalRepos: () => void;
+  addExternalRepo: (repo: Omit<ExternalRepoReference, 'id' | 'addedAt'>) => void;
+  updateExternalRepo: (repo: ExternalRepoReference) => void;
+  removeExternalRepo: (id: string) => void;
+  fetchExternalRepos: (ids: string[], forceRefresh?: boolean) => void;
+  getExternalReposCacheStatus: (ids: string[]) => void;
+  clearExternalReposCache: (ids?: string[]) => void;
+  getExternalReposMcpStatus: () => void;
+  validateExternalRepoUrl: (url: string) => void;
+  validateGitHubToken: (token: string) => void;
+  setGitHubToken: (token: string) => void;
+  getExternalReposCacheStats: () => void;
+  externalReposUrlValidation: { valid: boolean; error?: string; defaultBranch?: string } | null;
+  clearExternalReposUrlValidation: () => void;
 }
 
 const DEFAULT_LOOP_STATUS: LoopStatus = {
@@ -214,9 +282,53 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
   const [portsLoading, setPortsLoading] = useState(false);
   const [portsError, setPortsError] = useState<string | null>(null);
 
+  // Log management state
+  const [logSessions, setLogSessions] = useState<LogSession[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
+  const [logContent, setLogContent] = useState<{ filename: string; content: string } | null>(null);
+  const [logContentLoading, setLogContentLoading] = useState(false);
+
+  // Troubleshoot state
+  const [troubleshootRunning, setTroubleshootRunning] = useState(false);
+  const [troubleshootOutput, setTroubleshootOutput] = useState('');
+  const [troubleshootError, setTroubleshootError] = useState<string | null>(null);
+
+  // Stories generator state
+  const [storiesGenerating, setStoriesGenerating] = useState(false);
+  const [storiesOutput, setStoriesOutput] = useState('');
+  const [storiesComplete, setStoriesComplete] = useState<PrdJson | null>(null);
+  const [storiesError, setStoriesError] = useState<string | null>(null);
+
+  // Iterative PRD generator state
+  const [prdInterviewSession, setPrdInterviewSession] = useState<PRDSession | null>(null);
+  const [prdVersionHistory, setPrdVersionHistory] = useState<PRDVersionHistory | null>(null);
+  const [prdInterviewAnalysis, setPrdInterviewAnalysis] = useState<CodebaseAnalysis | null>(null);
+  const [prdInterviewQuestions, setPrdInterviewQuestions] = useState<{ roundNumber: number; questions: PRDQuestion[] } | null>(null);
+  const [prdInterviewStatus, setPrdInterviewStatus] = useState<{ phase: PRDInterviewPhase; analyzing: boolean; generating: boolean }>({
+    phase: 'version-select',
+    analyzing: false,
+    generating: false,
+  });
+  const [prdInterviewOutput, setPrdInterviewOutput] = useState('');
+  const [prdInterviewComplete, setPrdInterviewComplete] = useState<{ version: PRDVersion; prd: string; audience: string } | null>(null);
+  const [prdInterviewError, setPrdInterviewError] = useState<string | null>(null);
+
+  // External repos state
+  const [externalRepos, setExternalRepos] = useState<ExternalRepoReference[]>([]);
+  const [externalReposLoading, setExternalReposLoading] = useState(false);
+  const [externalReposCacheStatus, setExternalReposCacheStatus] = useState<Record<string, RepoCacheStatus>>({});
+  const [externalReposMcpStatus, setExternalReposMcpStatus] = useState<GitHubMcpConfig | null>(null);
+  const [externalReposCacheStats, setExternalReposCacheStats] = useState<RepoCacheStats | null>(null);
+  const [externalReposFetching, setExternalReposFetching] = useState(false);
+  const [externalReposError, setExternalReposError] = useState<string | null>(null);
+  const [externalReposUrlValidation, setExternalReposUrlValidation] = useState<{ valid: boolean; error?: string; defaultBranch?: string } | null>(null);
+
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCleaningUpRef = useRef(false);
+  // Track previous loop running state for transition detection (avoids stale closure issue)
+  const prevLoopRunningRef = useRef(false);
 
   const connect = useCallback(() => {
     if (isCleaningUpRef.current) {
@@ -273,9 +385,24 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
         const message: ServerMessage = JSON.parse(event.data);
 
         switch (message.type) {
-          case 'loop:status':
-            setLoopStatus(message.payload);
+          case 'loop:status': {
+            const prevRunning = prevLoopRunningRef.current;
+            const newStatus = message.payload as LoopStatus;
+            setLoopStatus(newStatus);
+            // Update ref for next comparison
+            prevLoopRunningRef.current = newStatus.running;
+            // Show toast for state changes
+            if (!prevRunning && newStatus.running) {
+              toast.success('Loop started', {
+                description: `Mode: ${newStatus.mode}`,
+              });
+            } else if (prevRunning && !newStatus.running) {
+              toast.info('Loop stopped', {
+                description: `Completed ${newStatus.iteration} iteration(s)`,
+              });
+            }
             break;
+          }
           case 'session:recovered':
             // Session recovered after browser refresh
             console.log('Session recovered:', message.payload.sessionId);
@@ -289,10 +416,21 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             break;
           case 'session:error':
             console.error('Session recovery error:', message.payload.error);
+            toast.error('Session error', {
+              description: message.payload.error,
+            });
             break;
-          case 'loop:log':
-            setLogs((prev) => [...prev.slice(-500), message.payload]); // Keep last 500 logs
+          case 'loop:log': {
+            const logEntry = message.payload as LogEntry;
+            setLogs((prev) => [...prev.slice(-500), logEntry]); // Keep last 500 logs
+            // Show toast for error logs
+            if (logEntry.type === 'error') {
+              toast.error('Loop Error', {
+                description: logEntry.content.slice(0, 150),
+              });
+            }
             break;
+          }
           case 'tasks:update':
             setTasks(message.payload);
             break;
@@ -306,8 +444,11 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             }
             break;
           case 'config:saved':
-            // File was saved successfully - could track this for UI feedback
+            // File was saved successfully
             console.log('File saved:', message.payload.file);
+            toast.success('File saved', {
+              description: message.payload.file,
+            });
             break;
           case 'agents:update':
             setEnabledAgents(message.payload.enabledAgents);
@@ -330,9 +471,15 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             break;
           case 'plan:complete':
             setPlanComplete(message.payload);
+            toast.success('Plan generation complete', {
+              description: 'Implementation plan has been generated',
+            });
             break;
           case 'plan:error':
             setPlanError(message.payload.error);
+            toast.error('Plan generation failed', {
+              description: message.payload.error,
+            });
             break;
           // PRD generation messages
           case 'prd:status':
@@ -349,9 +496,15 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             break;
           case 'prd:complete':
             setPrdComplete(message.payload);
+            toast.success('PRD generation complete', {
+              description: 'Product requirements document has been generated',
+            });
             break;
           case 'prd:error':
             setPrdError(message.payload.error);
+            toast.error('PRD generation failed', {
+              description: message.payload.error,
+            });
             break;
           // Project scanning messages
           case 'project:scan-result':
@@ -397,11 +550,17 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             break;
           case 'claude:applied':
             setClaudeMdApplying(false);
+            toast.success('CLAUDE.md applied', {
+              description: 'Ralph template applied to project',
+            });
             break;
           case 'claude:error':
             console.error('CLAUDE.md error:', message.payload.error);
             setClaudeMdLoading(false);
             setClaudeMdApplying(false);
+            toast.error('CLAUDE.md error', {
+              description: message.payload.error,
+            });
             break;
           // Dependency check messages
           case 'dependencies:result':
@@ -411,12 +570,23 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
           case 'dependencies:error':
             console.error('Dependency check error:', message.payload.error);
             setDependencyLoading(false);
+            toast.error('Dependency check failed', {
+              description: message.payload.error,
+            });
             break;
           // Config file preview messages (for ExistingDocsViewer)
           case 'config:content':
             setConfigPreviewDoc({
               file: message.payload.file,
               content: message.payload.content,
+            });
+            setConfigPreviewLoading(false);
+            break;
+          case 'config:error':
+            // File doesn't exist or couldn't be read - clear loading and set empty content
+            setConfigPreviewDoc({
+              file: (message.payload as { file: string; error: string }).file,
+              content: '',
             });
             setConfigPreviewLoading(false);
             break;
@@ -427,11 +597,17 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             break;
           case 'agents:installed':
             setAgentInstalling(null);
+            toast.success('Agent installed', {
+              description: message.payload?.agentId || 'Agent installed successfully',
+            });
             break;
           case 'agents:error':
             console.error('Agent error:', message.payload.error);
             setAgentInstalling(null);
             setRepoAgentsLoading(false);
+            toast.error('Agent error', {
+              description: message.payload.error,
+            });
             break;
           // Review generator messages (Feature Set 14)
           case 'review-generator:status':
@@ -448,9 +624,15 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             break;
           case 'review-generator:complete':
             setReviewGeneratorComplete(message.payload);
+            toast.success('Review generated', {
+              description: 'Code review has been generated',
+            });
             break;
           case 'review-generator:error':
             setReviewGeneratorError(message.payload.error);
+            toast.error('Review generation failed', {
+              description: message.payload.error,
+            });
             break;
           // Review runner messages (Feature Set 13 - LLM-as-Judge)
           case 'review:status':
@@ -467,12 +649,19 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             break;
           case 'review:complete':
             setReviewRunnerResult(message.payload);
+            toast.success('Review complete', {
+              description: `Score: ${message.payload.score}/100`,
+            });
             break;
           case 'review:error':
             setReviewRunnerError(message.payload.error);
+            toast.error('Review failed', {
+              description: message.payload.error,
+            });
             break;
           case 'review:cancelled':
             setReviewRunnerStatus(DEFAULT_REVIEW_RUNNER_STATUS);
+            toast.info('Review cancelled');
             break;
           // Workflow mode messages
           case 'mode:current':
@@ -483,6 +672,9 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
           case 'mode:updated':
             if (message.payload?.success && message.payload?.mode) {
               setWorkflowModeState(message.payload.mode as WorkflowMode);
+              toast.success('Workflow mode updated', {
+                description: `Switched to ${message.payload.mode} mode`,
+              });
             }
             break;
           // Port management messages
@@ -492,11 +684,294 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             setPortsError(null);
             break;
           case 'ports:killed':
-            // Port list will be automatically sent after kill, so no need to update state here
+            // Port list will be automatically sent after kill
+            toast.success('Process stopped', {
+              description: `PID ${(message.payload as { pid: number }).pid} terminated`,
+            });
             break;
           case 'ports:error':
             setPortsError((message.payload as { error: string }).error);
             setPortsLoading(false);
+            toast.error('Port error', {
+              description: (message.payload as { error: string }).error,
+            });
+            break;
+          // Log management messages
+          case 'logs:list':
+            setLogSessions(message.payload as LogSession[]);
+            setLogsLoading(false);
+            setLogsError(null);
+            break;
+          case 'logs:content':
+            setLogContent(message.payload as { filename: string; content: string });
+            setLogContentLoading(false);
+            break;
+          case 'logs:deleted':
+            toast.success('Log deleted', {
+              description: (message.payload as { filename: string }).filename,
+            });
+            break;
+          case 'logs:cleanup:result':
+            toast.success('Logs cleaned up', {
+              description: `Deleted ${(message.payload as { deletedCount: number }).deletedCount} old log(s)`,
+            });
+            break;
+          case 'logs:error':
+            setLogsError((message.payload as { error: string }).error);
+            setLogsLoading(false);
+            setLogContentLoading(false);
+            toast.error('Log error', {
+              description: (message.payload as { error: string }).error,
+            });
+            break;
+          // Troubleshoot messages
+          case 'troubleshoot:status': {
+            const status = message.payload as { running: boolean; startedAt: string | null };
+            setTroubleshootRunning(status.running);
+            if (status.running) {
+              setTroubleshootError(null);
+              toast.info('Troubleshooting started', {
+                description: 'Claude is analyzing the error...',
+              });
+            }
+            break;
+          }
+          case 'troubleshoot:output': {
+            const output = message.payload as { text: string };
+            setTroubleshootOutput((prev) => prev + output.text);
+            break;
+          }
+          case 'troubleshoot:complete': {
+            const result = message.payload as { success: boolean; output: string };
+            setTroubleshootRunning(false);
+            if (result.success) {
+              toast.success('Troubleshooting complete', {
+                description: 'Claude finished analyzing and fixing the issue',
+              });
+            }
+            break;
+          }
+          case 'troubleshoot:cancelled':
+            setTroubleshootRunning(false);
+            toast.info('Troubleshooting cancelled');
+            break;
+          case 'troubleshoot:error':
+            setTroubleshootRunning(false);
+            setTroubleshootError((message.payload as { error: string }).error);
+            toast.error('Troubleshoot error', {
+              description: (message.payload as { error: string }).error,
+            });
+            break;
+          // Stories generator messages
+          case 'stories:status': {
+            const status = message.payload as { generating: boolean; startedAt: string | null };
+            setStoriesGenerating(status.generating);
+            if (status.generating) {
+              setStoriesError(null);
+              setStoriesComplete(null);
+              toast.info('Generating user stories', {
+                description: 'Converting PRD to prd.json...',
+              });
+            }
+            break;
+          }
+          case 'stories:output': {
+            const output = message.payload as { text: string };
+            setStoriesOutput((prev) => prev + output.text);
+            break;
+          }
+          case 'stories:complete': {
+            const prdJson = message.payload as PrdJson;
+            setStoriesGenerating(false);
+            setStoriesComplete(prdJson);
+            toast.success('User stories generated', {
+              description: `Created ${prdJson.userStories.length} user stories`,
+            });
+            break;
+          }
+          case 'stories:saved':
+            toast.success('prd.json saved', {
+              description: 'User stories saved to project',
+            });
+            break;
+          case 'stories:cancelled':
+            setStoriesGenerating(false);
+            toast.info('Stories generation cancelled');
+            break;
+          case 'stories:error':
+            setStoriesGenerating(false);
+            setStoriesError((message.payload as { error: string }).error);
+            toast.error('Stories generation error', {
+              description: (message.payload as { error: string }).error,
+            });
+            break;
+
+          // Iterative PRD generator messages
+          case 'prd-interview:versions': {
+            const versions = message.payload as PRDVersionHistory;
+            setPrdVersionHistory(versions);
+            break;
+          }
+          case 'prd-interview:session': {
+            const session = message.payload as PRDSession;
+            setPrdInterviewSession(session);
+            setPrdInterviewError(null);
+            if (session.codebaseAnalysis) {
+              setPrdInterviewAnalysis(session.codebaseAnalysis);
+            }
+            break;
+          }
+          case 'prd-interview:analysis': {
+            const analysis = message.payload as CodebaseAnalysis;
+            setPrdInterviewAnalysis(analysis);
+            toast.success('Codebase analysis complete', {
+              description: `Analyzed ${analysis.fileCount} files`,
+            });
+            break;
+          }
+          case 'prd-interview:questions': {
+            const data = message.payload as { roundNumber: number; questions: PRDQuestion[] };
+            setPrdInterviewQuestions(data);
+            toast.info(`Round ${data.roundNumber} questions ready`, {
+              description: `${data.questions.length} questions to answer`,
+            });
+            break;
+          }
+          case 'prd-interview:status': {
+            const status = message.payload as { phase: PRDInterviewPhase; analyzing: boolean; generating: boolean };
+            setPrdInterviewStatus(status);
+            break;
+          }
+          case 'prd-interview:output': {
+            const output = message.payload as { text: string };
+            setPrdInterviewOutput((prev) => prev + output.text);
+            break;
+          }
+          case 'prd-interview:complete': {
+            const result = message.payload as { version: PRDVersion; prd: string; audience: string };
+            setPrdInterviewComplete(result);
+            setPrdInterviewStatus({ phase: 'complete', analyzing: false, generating: false });
+            toast.success(`PRD v${result.version.version} generated`, {
+              description: 'PRD and Audience documents created',
+            });
+            break;
+          }
+          case 'prd-interview:cancelled':
+            setPrdInterviewStatus({ phase: 'version-select', analyzing: false, generating: false });
+            toast.info('PRD interview cancelled');
+            break;
+          case 'prd-interview:error':
+            setPrdInterviewError((message.payload as { error: string }).error);
+            toast.error('PRD interview error', {
+              description: (message.payload as { error: string }).error,
+            });
+            break;
+
+          // External repos messages
+          case 'external-repos:list':
+            setExternalRepos(message.payload as ExternalRepoReference[]);
+            setExternalReposLoading(false);
+            break;
+          case 'external-repos:added': {
+            const repo = message.payload as ExternalRepoReference;
+            setExternalRepos((prev) => [...prev, repo]);
+            toast.success('Repository added', {
+              description: repo.alias || repo.url,
+            });
+            break;
+          }
+          case 'external-repos:updated': {
+            const updated = message.payload as ExternalRepoReference;
+            setExternalRepos((prev) => prev.map((r) => r.id === updated.id ? updated : r));
+            toast.success('Repository updated', {
+              description: updated.alias || updated.url,
+            });
+            break;
+          }
+          case 'external-repos:removed': {
+            const { repoId } = message.payload as { repoId: string };
+            setExternalRepos((prev) => prev.filter((r) => r.id !== repoId));
+            toast.success('Repository removed');
+            break;
+          }
+          case 'external-repos:fetched': {
+            const { contents } = message.payload as { contents: FetchedRepoContent[]; summary: string };
+            setExternalReposFetching(false);
+            toast.success('Repositories fetched', {
+              description: `Fetched ${contents.length} repo(s)`,
+            });
+            break;
+          }
+          case 'external-repos:cache-status':
+            setExternalReposCacheStatus(message.payload as Record<string, RepoCacheStatus>);
+            break;
+          case 'external-repos:cache-cleared':
+            toast.success('Cache cleared', {
+              description: (message.payload as { ids?: string[] }).ids?.length
+                ? `Cleared ${(message.payload as { ids?: string[] }).ids!.length} repo(s)`
+                : 'All cache cleared',
+            });
+            break;
+          case 'external-repos:mcp-status':
+            setExternalReposMcpStatus(message.payload as GitHubMcpConfig);
+            break;
+          case 'external-repos:url-validated': {
+            const result = message.payload as { url: string; valid: boolean; error?: string; repoInfo?: { owner: string; repo: string; defaultBranch: string } };
+            // Update state for component consumption
+            setExternalReposUrlValidation({
+              valid: result.valid,
+              error: result.error,
+              defaultBranch: result.repoInfo?.defaultBranch,
+            });
+            if (result.valid) {
+              toast.success('URL validated', {
+                description: `${result.repoInfo?.owner}/${result.repoInfo?.repo}`,
+              });
+            } else {
+              toast.error('Invalid repository URL', {
+                description: result.error,
+              });
+            }
+            break;
+          }
+          case 'external-repos:token-validated': {
+            const result = message.payload as { valid: boolean; scopes?: string[]; username?: string };
+            if (result.valid) {
+              toast.success('GitHub token valid', {
+                description: `User: ${result.username}`,
+              });
+            } else {
+              toast.error('Invalid GitHub token');
+            }
+            break;
+          }
+          case 'external-repos:token-set': {
+            const result = message.payload as { success: boolean; login?: string; scopes?: string[]; error?: string };
+            if (result.success) {
+              toast.success('GitHub token saved', {
+                description: `Authenticated as ${result.login}`,
+              });
+              // Refresh MCP status to reflect the new token
+              if (wsRef.current?.readyState === WebSocket.OPEN) {
+                wsRef.current.send(JSON.stringify({ type: 'external-repos:mcp-status' }));
+              }
+            } else {
+              toast.error('Failed to save token', {
+                description: result.error,
+              });
+            }
+            break;
+          }
+          case 'external-repos:cache-stats':
+            setExternalReposCacheStats(message.payload as RepoCacheStats);
+            break;
+          case 'external-repos:error':
+            setExternalReposLoading(false);
+            setExternalReposFetching(false);
+            setExternalReposError((message.payload as { error: string }).error);
+            toast.error('External repos error', {
+              description: (message.payload as { error: string }).error,
+            });
             break;
         }
       } catch {
@@ -733,6 +1208,250 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     }
   }, []);
 
+  // Log management callbacks
+  const listLogs = useCallback(() => {
+    setLogsLoading(true);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'logs:list' }));
+    }
+  }, []);
+
+  const readLog = useCallback((filename: string) => {
+    setLogContentLoading(true);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'logs:read', payload: { filename } }));
+    }
+  }, []);
+
+  const deleteLog = useCallback((filename: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'logs:delete', payload: { filename } }));
+    }
+  }, []);
+
+  const cleanupLogs = useCallback((keepDays: number) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'logs:cleanup', payload: { keepDays } }));
+    }
+  }, []);
+
+  // Troubleshoot callbacks
+  const launchTroubleshoot = useCallback((errorLog: string) => {
+    setTroubleshootOutput(''); // Clear previous output
+    setTroubleshootError(null);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'troubleshoot:launch', payload: { errorLog } }));
+    }
+  }, []);
+
+  const cancelTroubleshoot = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'troubleshoot:cancel' }));
+    }
+  }, []);
+
+  const clearTroubleshootOutput = useCallback(() => {
+    setTroubleshootOutput('');
+    setTroubleshootError(null);
+  }, []);
+
+  // Stories generator callbacks
+  const generateStories = useCallback(() => {
+    setStoriesOutput(''); // Clear previous output
+    setStoriesComplete(null);
+    setStoriesError(null);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'stories:generate' }));
+    }
+  }, []);
+
+  const cancelStories = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'stories:cancel' }));
+    }
+  }, []);
+
+  const saveStories = useCallback((prdJson: PrdJson) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'stories:save', payload: { prdJson } }));
+    }
+  }, []);
+
+  const clearStoriesOutput = useCallback(() => {
+    setStoriesOutput('');
+    setStoriesComplete(null);
+    setStoriesError(null);
+  }, []);
+
+  // Iterative PRD generator callbacks
+  const checkPrdVersions = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'prd-interview:check-versions' }));
+    }
+  }, []);
+
+  const startPrdInterview = useCallback((
+    description: string,
+    contextDocs: string[],
+    previousVersions: number[],
+    startFresh: boolean,
+    additionalContext?: string,
+    skipQuestions?: boolean
+  ) => {
+    setPrdInterviewOutput('');
+    setPrdInterviewComplete(null);
+    setPrdInterviewError(null);
+    setPrdInterviewQuestions(null);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'prd-interview:start',
+        payload: { description, additionalContext, contextDocs, previousVersions, startFresh, skipQuestions },
+      }));
+    }
+  }, []);
+
+  const analyzePrdCodebase = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'prd-interview:analyze-codebase' }));
+    }
+  }, []);
+
+  const submitPrdAnswers = useCallback((
+    roundNumber: number,
+    answers: Array<{ questionId: string; answer?: string; skipped: boolean }>
+  ) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'prd-interview:answer',
+        payload: { roundNumber, answers },
+      }));
+    }
+  }, []);
+
+  const requestMorePrdQuestions = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'prd-interview:more' }));
+    }
+  }, []);
+
+  const generatePrdFromInterview = useCallback(() => {
+    setPrdInterviewOutput('');
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'prd-interview:generate' }));
+    }
+  }, []);
+
+  const cancelPrdInterview = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'prd-interview:cancel' }));
+    }
+  }, []);
+
+  const resumePrdSession = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'prd-interview:resume' }));
+    }
+  }, []);
+
+  const clearPrdSession = useCallback(() => {
+    setPrdInterviewSession(null);
+    setPrdInterviewQuestions(null);
+    setPrdInterviewAnalysis(null);
+    setPrdInterviewComplete(null);
+    setPrdInterviewOutput('');
+    setPrdInterviewError(null);
+    setPrdInterviewStatus({ phase: 'version-select', analyzing: false, generating: false });
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'prd-interview:clear' }));
+    }
+  }, []);
+
+  const clearPrdInterviewOutput = useCallback(() => {
+    setPrdInterviewOutput('');
+    setPrdInterviewComplete(null);
+    setPrdInterviewError(null);
+  }, []);
+
+  // External repos callbacks
+  const listExternalRepos = useCallback(() => {
+    setExternalReposLoading(true);
+    setExternalReposError(null);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:list' }));
+    }
+  }, []);
+
+  const addExternalRepo = useCallback((repo: Omit<ExternalRepoReference, 'id' | 'addedAt'>) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:add', payload: repo }));
+    }
+  }, []);
+
+  const updateExternalRepo = useCallback((repo: ExternalRepoReference) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:update', payload: repo }));
+    }
+  }, []);
+
+  const removeExternalRepo = useCallback((id: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:remove', payload: { id } }));
+    }
+  }, []);
+
+  const fetchExternalRepos = useCallback((ids: string[], forceRefresh = false) => {
+    setExternalReposFetching(true);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:fetch', payload: { ids, forceRefresh } }));
+    }
+  }, []);
+
+  const getExternalReposCacheStatus = useCallback((ids: string[]) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:cache-status', payload: { ids } }));
+    }
+  }, []);
+
+  const clearExternalReposCache = useCallback((ids?: string[]) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:clear-cache', payload: { ids } }));
+    }
+  }, []);
+
+  const getExternalReposMcpStatus = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:mcp-status' }));
+    }
+  }, []);
+
+  const validateExternalRepoUrl = useCallback((url: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:validate-url', payload: { url } }));
+    }
+  }, []);
+
+  const validateGitHubToken = useCallback((token: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:validate-token', payload: { token } }));
+    }
+  }, []);
+
+  const setGitHubToken = useCallback((token: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:set-token', payload: { token } }));
+    }
+  }, []);
+
+  const getExternalReposCacheStats = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'external-repos:cache-stats' }));
+    }
+  }, []);
+
+  const clearExternalReposUrlValidation = useCallback(() => {
+    setExternalReposUrlValidation(null);
+  }, []);
+
   return {
     connected,
     loopStatus,
@@ -821,5 +1540,72 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     portsError,
     scanPorts,
     killPort,
+    // Log management
+    logSessions,
+    logsLoading,
+    logsError,
+    logContent,
+    logContentLoading,
+    listLogs,
+    readLog,
+    deleteLog,
+    cleanupLogs,
+    // Troubleshoot
+    troubleshootRunning,
+    troubleshootOutput,
+    troubleshootError,
+    launchTroubleshoot,
+    cancelTroubleshoot,
+    clearTroubleshootOutput,
+    // Stories generator
+    storiesGenerating,
+    storiesOutput,
+    storiesComplete,
+    storiesError,
+    generateStories,
+    cancelStories,
+    saveStories,
+    clearStoriesOutput,
+    // Iterative PRD generator
+    prdInterviewSession,
+    prdVersionHistory,
+    prdInterviewAnalysis,
+    prdInterviewQuestions,
+    prdInterviewStatus,
+    prdInterviewOutput,
+    prdInterviewComplete,
+    prdInterviewError,
+    checkPrdVersions,
+    startPrdInterview,
+    analyzePrdCodebase,
+    submitPrdAnswers,
+    requestMorePrdQuestions,
+    generatePrdFromInterview,
+    cancelPrdInterview,
+    resumePrdSession,
+    clearPrdSession,
+    clearPrdInterviewOutput,
+    // External repos
+    externalRepos,
+    externalReposLoading,
+    externalReposCacheStatus,
+    externalReposMcpStatus,
+    externalReposCacheStats,
+    externalReposFetching,
+    externalReposError,
+    listExternalRepos,
+    addExternalRepo,
+    updateExternalRepo,
+    removeExternalRepo,
+    fetchExternalRepos,
+    getExternalReposCacheStatus,
+    clearExternalReposCache,
+    getExternalReposMcpStatus,
+    validateExternalRepoUrl,
+    validateGitHubToken,
+    setGitHubToken,
+    getExternalReposCacheStats,
+    externalReposUrlValidation,
+    clearExternalReposUrlValidation,
   };
 }

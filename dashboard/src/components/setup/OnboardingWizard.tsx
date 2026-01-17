@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,7 @@ type WizardStep = 'welcome' | 'mode' | 'scanning' | 'results' | 'configure' | 'd
 export function OnboardingWizard({
   projectScan,
   projectInfo,
-  scanLoading,
+  scanLoading: _scanLoading, // Available for future use, currently we detect completion via projectScan
   workflowMode,
   onWorkflowModeChange,
   onScanProject,
@@ -59,10 +59,13 @@ export function OnboardingWizard({
     lint: '',
     typecheck: '',
   });
+  // Track which projectScan we've initialized commands from to avoid re-initializing on every render
+  const initializedScanRef = useRef<ProjectScan | null>(null);
 
-  // Update commands when scan results come in
+  // Update commands when scan results come in - only once per new scan
   useEffect(() => {
-    if (projectScan?.detectedCommands) {
+    if (projectScan?.detectedCommands && projectScan !== initializedScanRef.current) {
+      initializedScanRef.current = projectScan;
       setCommands({
         build: projectScan.detectedCommands.build || '',
         dev: projectScan.detectedCommands.dev || '',
@@ -70,15 +73,12 @@ export function OnboardingWizard({
         lint: projectScan.detectedCommands.lint || '',
         typecheck: projectScan.detectedCommands.typecheck || '',
       });
+      // Auto-advance to results when scan completes while in scanning step
+      if (step === 'scanning') {
+        setStep('results');
+      }
     }
-  }, [projectScan]);
-
-  // Handle scan completion
-  useEffect(() => {
-    if (step === 'scanning' && projectScan && !scanLoading) {
-      setStep('results');
-    }
-  }, [step, projectScan, scanLoading]);
+  }, [projectScan, step]);
 
   const handleStartScan = () => {
     // Go to mode selection first
@@ -158,7 +158,7 @@ Language: ${language}
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <Sparkles className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Welcome to <span className="text-primary">WIGGUM</span></CardTitle>
+              <CardTitle className="text-2xl">Welcome to <span className="text-primary">Corporal Wiggum</span></CardTitle>
               <CardDescription className="text-base">
                 Let's set up your project for autonomous AI-powered development.
               </CardDescription>

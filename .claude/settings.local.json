@@ -18,7 +18,9 @@
       "Bash(npm run build:*)",
       "Skill(ralph-wiggum:ralph-loop)",
       "Bash(npm run test:*)",
-      "Bash(npm run docs:build:*)"
+      "Bash(npm run docs:build:*)",
+      "Bash(claude mcp:*)",
+      "Bash(npm run typecheck:*)"
     ]
   }
 }

@@ -2,6 +2,7 @@ import './index.css'
 import { Dashboard } from './components/Dashboard'
 import { LauncherHome } from './components/launcher/LauncherHome'
 import { AccessibilityProvider } from './components/AccessibilityProvider'
+import { Toaster } from './components/ui/toaster'
 
 /**
  * App - Main entry point that routes between Launcher and Dashboard views
@@ -24,6 +25,7 @@ function App() {
     return (
       <AccessibilityProvider>
         <LauncherHome />
+        <Toaster />
       </AccessibilityProvider>
     )
   }
@@ -32,6 +34,7 @@ function App() {
   return (
     <AccessibilityProvider>
       <Dashboard backendPort={backendPort ? parseInt(backendPort, 10) : undefined} />
+      <Toaster />
     </AccessibilityProvider>
   )
 }

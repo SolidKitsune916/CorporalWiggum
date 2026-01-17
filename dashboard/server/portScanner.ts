@@ -12,9 +12,155 @@ export interface PortProcess {
   user: string;
 }
 
+// Processes to exclude from the port list (consumer apps, browsers, etc.)
+const EXCLUDED_PROCESSES = new Set([
+  'Spotify',
+  'spotify',
+  'Google',
+  'Chrome',
+  'Firefox',
+  'Safari',
+  'Arc',
+  'Brave',
+  'Edge',
+  'Opera',
+  'Slack',
+  'Discord',
+  'Zoom',
+  'zoom.us',
+  'Teams',
+  'Electron',  // Generic Electron apps (if name is just "Electron")
+  'Dropbox',
+  'OneDrive',
+  'iCloud',
+  'CloudApp',
+  'Notion',
+  'Figma',
+  'FigmaAgent',
+  'Creative',  // Adobe Creative Cloud
+  'Adobe',
+  'Finder',
+  'Mail',
+  'Messages',
+  'FaceTime',
+  'Music',
+  'TV',
+  'Podcasts',
+  'Photos',
+  'Preview',
+  'Notes',
+  'Reminders',
+  'Calendar',
+  'rapportd',   // macOS system
+  'identitys',  // macOS system
+  'sharingd',   // macOS system
+  'AMPDevices', // Apple services
+  'ControlCe',  // Control Center
+  'SystemUI',   // System UI
+  'coreautha',  // Core auth
+  'accessori',  // Accessories
+  'Siri',
+  '1Password',
+  'Bitwarden',
+  'LastPass',
+  'mDNSRespo',  // mDNS Responder
+  'CrashRepo',  // Crash Reporter
+  'SystemPre',  // System Preferences
+  'Keychain',
+  'loginwind',  // Login window
+]);
+
+// Development-related process names to always include
+const DEV_PROCESSES = new Set([
+  'node',
+  'npm',
+  'npx',
+  'yarn',
+  'pnpm',
+  'bun',
+  'deno',
+  'vite',
+  'esbuild',
+  'webpack',
+  'next',
+  'nuxt',
+  'python',
+  'python3',
+  'ruby',
+  'rails',
+  'go',
+  'rust',
+  'cargo',
+  'java',
+  'gradle',
+  'maven',
+  'docker',
+  'postgres',
+  'mysql',
+  'mongo',
+  'redis',
+  'nginx',
+  'apache',
+  'http-serv',
+  'live-serv',
+  'tsx',
+  'ts-node',
+  'nodemon',
+  'PM2',
+  'claude',
+  'cursor',
+  'code',  // VS Code
+  'Code',
+]);
+
+// Common development port ranges
+const DEV_PORT_RANGES = [
+  { min: 3000, max: 3999 },  // React, Express, etc.
+  { min: 4000, max: 4999 },  // Various dev servers
+  { min: 5000, max: 5999 },  // Flask, Vite, etc.
+  { min: 6000, max: 6999 },  // Various
+  { min: 8000, max: 8999 },  // Django, various servers
+  { min: 9000, max: 9999 },  // Various
+  { min: 5432, max: 5432 },  // PostgreSQL
+  { min: 3306, max: 3306 },  // MySQL
+  { min: 27017, max: 27017 }, // MongoDB
+  { min: 6379, max: 6379 },  // Redis
+];
+
 /**
- * Scan system for all processes using network ports
+ * Check if a port is in common development ranges
+ */
+function isDevPort(port: number): boolean {
+  return DEV_PORT_RANGES.some(range => port >= range.min && port <= range.max);
+}
+
+/**
+ * Check if a process name looks like a development process
+ */
+function isDevProcess(name: string): boolean {
+  const lowerName = name.toLowerCase();
+  
+  // Check if explicitly excluded
+  for (const excluded of EXCLUDED_PROCESSES) {
+    if (lowerName.includes(excluded.toLowerCase())) {
+      return false;
+    }
+  }
+  
+  // Check if it's a known dev process
+  for (const devProc of DEV_PROCESSES) {
+    if (lowerName.includes(devProc.toLowerCase())) {
+      return true;
+    }
+  }
+  
+  return true; // Default to including if not excluded
+}
+
+/**
+ * Scan system for development-related processes using network ports
  * Uses lsof on macOS/Linux
+ * Filters out consumer applications like Spotify, Chrome, etc.
  */
 export async function scanPorts(): Promise<PortProcess[]> {
   try {
@@ -52,9 +198,19 @@ export async function scanPorts(): Promise<PortProcess[]> {
       const port = parseInt(portMatch[1], 10);
       if (isNaN(port)) continue;
 
-      // Filter to common dev port ranges (1024-65535, focus on 3000-9999)
-      // But include all ports for completeness
-      if (port < 1024) continue; // Skip privileged ports
+      // Skip privileged ports
+      if (port < 1024) continue;
+
+      // Filter: only include if it's a dev port OR a dev process
+      // This filters out random high ports used by consumer apps
+      if (!isDevPort(port) && !isDevProcess(name)) {
+        continue;
+      }
+
+      // Double-check: skip explicitly excluded processes even on dev ports
+      if (!isDevProcess(name)) {
+        continue;
+      }
 
       // Determine protocol from the TYPE column (usually index 4)
       const typeCol = parts[4] || '';

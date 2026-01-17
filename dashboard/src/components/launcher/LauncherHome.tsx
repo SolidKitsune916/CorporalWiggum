@@ -3,7 +3,7 @@
  * Displays project cards and provides actions for managing projects/instances
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useLauncher } from '@/hooks/useLauncher';
 import { ProjectCard } from './ProjectCard';
 import { AddProjectDialog } from './AddProjectDialog';
@@ -51,23 +51,31 @@ export function LauncherHome() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [spawningProjectId, setSpawningProjectId] = useState<string | null>(null);
   const [initializingProjectId, setInitializingProjectId] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
   // Track spawning state per project to prevent double-spawns
   const spawningRef = useRef<Set<string>>(new Set());
 
-  // Handle init result
+  // Derive success message from lastInitResult - no setState needed
+  const successMessage = useMemo(() => {
+    if (!lastInitResult || lastInitResult.created.length === 0) return null;
+    const project = projects.find(p => p.id === lastInitResult.projectId);
+    const projectName = project?.name || 'Project';
+    return `Created ${lastInitResult.created.join(', ')} in ${projectName}`;
+  }, [lastInitResult, projects]);
+
+  // Handle side effects when init completes: clear initializing state and auto-hide message
   useEffect(() => {
     if (lastInitResult && lastInitResult.created.length > 0) {
-      const project = projects.find(p => p.id === lastInitResult.projectId);
-      const projectName = project?.name || 'Project';
-      setSuccessMessage(`Created ${lastInitResult.created.join(', ')} in ${projectName}`);
       setInitializingProjectId(null);
-      clearInitResult();
+      setShowSuccess(true);
       // Auto-hide after 5 seconds
-      const timer = setTimeout(() => setSuccessMessage(null), 5000);
+      const timer = setTimeout(() => {
+        setShowSuccess(false);
+        clearInitResult();
+      }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [lastInitResult, projects, clearInitResult]);
+  }, [lastInitResult, clearInitResult]);
 
   const handleOpenDashboard = async (projectId: string) => {
     // Prevent double-spawns
@@ -232,7 +240,7 @@ export function LauncherHome() {
       )}
 
       {/* Success Banner (for init results) */}
-      {successMessage && (
+      {showSuccess && successMessage && (
         <div className="bg-green-500/15 border-b border-green-500/30">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
@@ -240,7 +248,7 @@ export function LauncherHome() {
                 <CheckCircle className="h-4 w-4" />
                 <span className="text-sm">{successMessage}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setSuccessMessage(null)}>
+              <Button variant="ghost" size="sm" onClick={() => { setShowSuccess(false); clearInitResult(); }}>
                 <X className="h-4 w-4" />
               </Button>
             </div>

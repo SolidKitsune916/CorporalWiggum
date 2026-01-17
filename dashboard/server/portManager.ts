@@ -87,8 +87,22 @@ export class PortManager {
 
   /**
    * Check if a specific port is available
+   * Checks both IPv4 and IPv6 to ensure the port is truly free
    */
   async isPortAvailable(port: number): Promise<boolean> {
+    // Check IPv6 first (:: binds to all interfaces)
+    const ipv6Available = await this.checkPortOnHost(port, '::');
+    if (!ipv6Available) return false;
+    
+    // Also check IPv4 localhost for completeness
+    const ipv4Available = await this.checkPortOnHost(port, '127.0.0.1');
+    return ipv4Available;
+  }
+
+  /**
+   * Check if a port is available on a specific host
+   */
+  private checkPortOnHost(port: number, host: string): Promise<boolean> {
     return new Promise((resolve) => {
       const server = net.createServer();
 
@@ -102,7 +116,7 @@ export class PortManager {
         });
       });
 
-      server.listen(port, '127.0.0.1');
+      server.listen(port, host);
     });
   }
 

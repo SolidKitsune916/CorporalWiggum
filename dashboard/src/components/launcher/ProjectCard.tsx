@@ -86,10 +86,10 @@ export function ProjectCard({
 
   const handleOpenDashboard = () => {
     if (isRunning && instance) {
-      // Open the dashboard using the instance's actual ports
-      // frontendPort is the Vite dev server, backendPort is the Express/WebSocket server
-      const frontendPort = instance.frontendPort || 5173;
-      window.open(`http://localhost:${frontendPort}?backend=${instance.backendPort}`, '_blank');
+      // Open the dashboard using the current port with the backend parameter
+      // This keeps all dashboards on the same frontend port, just different backends
+      const currentPort = window.location.port || '5173';
+      window.open(`http://localhost:${currentPort}?backend=${instance.backendPort}`, '_blank');
     } else {
       onOpenDashboard(project.id);
     }
@@ -99,10 +99,10 @@ export function ProjectCard({
     <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <h3 className="font-semibold text-lg">{project.name}</h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <FolderOpen className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <h3 className="font-semibold text-lg truncate max-w-[180px]" title={project.name}>{project.name}</h3>
               <p className="text-xs text-muted-foreground truncate max-w-[200px]" title={project.path}>
                 {project.path}
               </p>

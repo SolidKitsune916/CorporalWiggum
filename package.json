@@ -1,7 +1,7 @@
 {
   "name": "ralph-wiggum",
   "version": "3.0.0",
-  "description": "Autonomous AI Development Loop Dashboard",
+  "description": "Corporal Wiggum - Codename: R.A.L.P.H. - Recursive Autonomous Loop for Programming Heuristically",
   "private": true,
   "scripts": {
     "start": "node scripts/check-deps.js && npm run dev --prefix dashboard",

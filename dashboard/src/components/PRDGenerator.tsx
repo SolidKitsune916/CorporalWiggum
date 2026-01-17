@@ -42,6 +42,7 @@ interface PRDGeneratorProps {
   // PRD generation
   onGeneratePRD: (options: {
     productName: string;
+    overallDescription: string;
     problemStatement: string;
     targetAudience: string;
     keyCapabilities: string[];
@@ -71,6 +72,7 @@ export function PRDGenerator({
   onClearOutput,
 }: PRDGeneratorProps) {
   const [productName, setProductName] = useState('');
+  const [overallDescription, setOverallDescription] = useState('');
   const [problemStatement, setProblemStatement] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
   const [capabilities, setCapabilities] = useState<string[]>(['']);
@@ -84,6 +86,7 @@ export function PRDGenerator({
       if (selectedDocPaths.length === 0) return;
       onGeneratePRD({
         productName: '',
+        overallDescription: overallDescription.trim(),  // Optional in docs-only mode
         problemStatement: '',
         targetAudience: '',
         keyCapabilities: [],
@@ -95,10 +98,11 @@ export function PRDGenerator({
 
     // Normal mode - require form fields
     const filteredCapabilities = capabilities.filter((cap) => cap.trim() !== '');
-    if (!productName.trim() || !problemStatement.trim() || filteredCapabilities.length === 0) return;
+    if (!productName.trim() || !overallDescription.trim() || !problemStatement.trim() || filteredCapabilities.length === 0) return;
 
     onGeneratePRD({
       productName: productName.trim(),
+      overallDescription: overallDescription.trim(),
       problemStatement: problemStatement.trim(),
       targetAudience: targetAudience.trim(),
       keyCapabilities: filteredCapabilities,
@@ -157,7 +161,7 @@ export function PRDGenerator({
   const hasOutput = prdOutput.length > 0 || prdComplete !== null;
   const isValid = docsOnlyMode
     ? selectedDocPaths.length > 0
-    : productName.trim() && problemStatement.trim() && capabilities.some((cap) => cap.trim());
+    : productName.trim() && overallDescription.trim() && problemStatement.trim() && capabilities.some((cap) => cap.trim());
 
   return (
     <div className="space-y-6">
@@ -242,6 +246,19 @@ export function PRDGenerator({
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
                   disabled={isGenerating}
+                />
+              </div>
+
+              {/* Overall Description */}
+              <div className="space-y-2">
+                <Label htmlFor="overallDescription">Overall Application Description</Label>
+                <textarea
+                  id="overallDescription"
+                  placeholder="Provide a high-level description of the application, its purpose, key characteristics, and what makes it unique. This will inform the comprehensive PRD generation..."
+                  value={overallDescription}
+                  onChange={(e) => setOverallDescription(e.target.value)}
+                  disabled={isGenerating}
+                  className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                 />
               </div>
 
@@ -463,17 +480,18 @@ export function PRDGenerator({
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-3">
           <p>
-            The PRD Generator uses Claude Code to create a Product Requirements Document
+            The PRD Generator uses Claude Code to create a comprehensive Product Requirements Document
             and Audience/JTBD analysis based on your inputs.
           </p>
           <div className="space-y-2">
             <p className="font-medium text-foreground">Generated Documents:</p>
             <ul className="list-inside list-disc space-y-1">
               <li>
-                <strong>PRD.md:</strong> Product overview, goals, scope, capabilities, and release strategy
+                <strong>PRD.md:</strong> Comprehensive PRD with technical architecture, data models, 
+                functional requirements, API specs, UI specs, and non-functional requirements
               </li>
               <li>
-                <strong>AUDIENCE_JTBD.md:</strong> Target audience analysis and jobs-to-be-done
+                <strong>AUDIENCE_JTBD.md:</strong> Target audience analysis, user personas, and jobs-to-be-done
               </li>
             </ul>
           </div>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { StatusBadge, useActionStatus } from '@/components/ui/status-badge';
 import { Save, RefreshCw } from 'lucide-react';
 
 interface AgentsConfigProps {
@@ -31,6 +32,7 @@ const DEFAULT_DATA: AgentsData = {
 export function AgentsConfig({ onWriteFile }: AgentsConfigProps) {
   const [data, setData] = useState<AgentsData>(DEFAULT_DATA);
   const [saving, setSaving] = useState(false);
+  const saveStatus = useActionStatus();
 
   const generateAgentsMd = () => {
     return `## Build & Run
@@ -72,6 +74,9 @@ Succinct learnings about how to RUN the project:
       onWriteFile('AGENTS.md', content);
       // Small delay to show feedback
       await new Promise((r) => setTimeout(r, 500));
+      saveStatus.setSuccess();
+    } catch {
+      saveStatus.setError();
     } finally {
       setSaving(false);
     }
@@ -151,7 +156,7 @@ Succinct learnings about how to RUN the project:
           </pre>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex items-center justify-end gap-2">
           <Button variant="outline" onClick={() => setData(DEFAULT_DATA)}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Reset
@@ -160,6 +165,7 @@ Succinct learnings about how to RUN the project:
             <Save className="mr-2 h-4 w-4" />
             {saving ? 'Saving...' : 'Save AGENTS.md'}
           </Button>
+          <StatusBadge status={saveStatus.status} />
         </div>
       </CardContent>
     </Card>
