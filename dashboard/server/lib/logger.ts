@@ -117,7 +117,7 @@ class Logger {
     this.log('fatal', msg, data);
   }
 
-  child(bindings: Record<string, unknown>): Logger {
+  child(_bindings: Record<string, unknown>): Logger {
     const child = new Logger({
       level: Object.keys(LOG_LEVELS).find(
         (k) => LOG_LEVELS[k as LogLevel] === this.minLevel

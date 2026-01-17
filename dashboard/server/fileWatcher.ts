@@ -199,7 +199,7 @@ export class FileWatcher extends EventEmitter {
       };
 
       this.emit('tasks', this.tasks);
-    } catch (error) {
+    } catch {
       // prd.json doesn't exist or is invalid - emit empty tasks
       this.tasks = { tasks: [], completed: 0, total: 0, lastUpdated: new Date() };
       this.emit('tasks', this.tasks);

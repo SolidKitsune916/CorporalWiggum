@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { GitBranch, GitPullRequest, AlertCircle, ExternalLink, RefreshCw, Circle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -62,11 +62,7 @@ export function GitHubPanel({ onSendMessage }: GitHubPanelProps) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'prs' | 'issues' | 'workflows'>('prs');
 
-  useEffect(() => {
-    checkGitHub();
-  }, []);
-
-  const checkGitHub = async () => {
+  const checkGitHub = useCallback(() => {
     setLoading(true);
     if (onSendMessage) {
       onSendMessage('github:check', {});
@@ -83,7 +79,11 @@ export function GitHubPanel({ onSendMessage }: GitHubPanelProps) {
       });
       setLoading(false);
     }, 500);
-  };
+  }, [onSendMessage]);
+
+  useEffect(() => {
+    checkGitHub();
+  }, [checkGitHub]);
 
   const refreshData = () => {
     setLoading(true);

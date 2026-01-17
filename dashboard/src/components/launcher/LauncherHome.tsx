@@ -10,7 +10,6 @@ import { AddProjectDialog } from './AddProjectDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Rocket,
   Plus,
   RefreshCw,
   Wifi,
@@ -88,10 +87,11 @@ export function LauncherHome() {
         spawningRef.current.delete(projectId);
         const instance = getInstanceForProject(projectId);
         if (instance) {
-          window.open(`http://localhost:${instance.backendPort}`, '_blank');
+          const currentPort = window.location.port || '5173';
+          window.open(`http://localhost:${currentPort}?backend=${instance.backendPort}`, '_blank');
         }
       }, 3000);
-    } catch (err) {
+    } catch {
       spawningRef.current.delete(projectId);
       setSpawningProjectId(null);
     }
@@ -106,7 +106,7 @@ export function LauncherHome() {
 
     spawningRef.current.add(projectId);
     setSpawningProjectId(projectId);
-    
+
     try {
       spawnInstance(projectId);
       // Clear spawning state after a delay (will be cleared earlier if instance spawns successfully)
@@ -114,7 +114,7 @@ export function LauncherHome() {
         setSpawningProjectId(null);
         spawningRef.current.delete(projectId);
       }, 5000);
-    } catch (err) {
+    } catch {
       spawningRef.current.delete(projectId);
       setSpawningProjectId(null);
     }
@@ -150,10 +150,16 @@ export function LauncherHome() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Rocket className="h-8 w-8 text-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-primary/10">
+                <img 
+                  src="/logo.png" 
+                  alt="Corporal Wiggum Logo" 
+                  className="h-full w-full object-contain"
+                />
+              </div>
               <div>
                 <h1 className="text-2xl font-bold">
-                  <span className="text-primary">WIGGUM</span> Launcher
+                  <span className="text-primary">Corporal Wiggum</span> Launcher
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Manage your R.A.L.P.H. projects

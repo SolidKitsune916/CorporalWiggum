@@ -20,6 +20,12 @@ import { ReviewRunner } from './reviewRunner.js';
 import { ReviewGenerator } from './reviewGenerator.js';
 import { TemplateManager, type TemplateName } from './templateManager.js';
 import { scanPorts, killProcess } from './portScanner.js';
+import { LogManager } from './logManager.js';
+import { TroubleshootRunner } from './troubleshootService.js';
+import { StoriesGenerator } from './storiesGenerator.js';
+import { IterativePrdGenerator } from './iterativePrdGenerator.js';
+import * as ExternalRepos from './externalRepos/index.js';
+import { validateGitHubToken, setGitHubToken } from './externalRepos/mcpConfigManager.js';
 import { RalphDatabase } from './database/index.js';
 import { getSessionRepository } from './database/repositories/SessionRepository.js';
 import { getHealthMonitor } from './healthMonitor.js';
@@ -147,6 +153,10 @@ async function startServer() {
   const planGenerator = new PlanGenerator(TARGET_PROJECT_PATH, RALPH_PATH);
   const prdGenerator = new PRDGenerator(TARGET_PROJECT_PATH, RALPH_PATH);
   const projectScanner = new ProjectScanner(TARGET_PROJECT_PATH);
+  const logManager = new LogManager(TARGET_PROJECT_PATH);
+  const troubleshootRunner = new TroubleshootRunner(TARGET_PROJECT_PATH, RALPH_PATH);
+  const storiesGenerator = new StoriesGenerator(TARGET_PROJECT_PATH);
+  const iterativePrdGenerator = new IterativePrdGenerator(TARGET_PROJECT_PATH, RALPH_PATH);
 
   // Initialize launcher services
   const projectRegistry = new ProjectRegistry();
@@ -192,7 +202,6 @@ async function startServer() {
 
     // Handle messages from client
     ws.on('message', async (data) => {
-      const messageStart = Date.now();
       metrics.incCounter(METRICS.WS_MESSAGES_TOTAL);
 
       try {
@@ -257,8 +266,19 @@ async function startServer() {
             }
             break;
           case 'config:read':
-            const content = await projectConfig.readFile(message.payload.file);
-            ws.send(JSON.stringify({ type: 'config:content', payload: { file: message.payload.file, content } }));
+            try {
+              const content = await projectConfig.readFile(message.payload.file);
+              ws.send(JSON.stringify({ type: 'config:content', payload: { file: message.payload.file, content } }));
+            } catch (err) {
+              // File doesn't exist or can't be read
+              ws.send(JSON.stringify({ 
+                type: 'config:error', 
+                payload: { 
+                  file: message.payload.file, 
+                  error: err instanceof Error ? err.message : 'File not found' 
+                } 
+              }));
+            }
             break;
           case 'config:write':
             await projectConfig.writeFile(message.payload.file, message.payload.content);
@@ -274,15 +294,16 @@ async function startServer() {
               const updatedConfig = await projectConfig.refresh();
               broadcast({ type: 'config:update', payload: updatedConfig });
               ws.send(JSON.stringify({ type: 'config:refreshed' }));
-            } catch (err) {
+            } catch {
               ws.send(JSON.stringify({ type: 'config:error', payload: { error: 'Failed to refresh config' } }));
             }
             break;
-          case 'agents:toggle':
+          case 'agents:toggle': {
             await projectConfig.toggleAgent(message.payload.agentId, message.payload.enabled);
             const enabledAgents = projectConfig.getEnabledAgents();
             broadcast({ type: 'agents:update', payload: { enabledAgents } });
             break;
+          }
           case 'plan:generate':
             try {
               // Read PRD context if requested
@@ -321,25 +342,29 @@ ${audienceContent}
           case 'prd:cancel':
             prdGenerator.cancel();
             break;
-          case 'project:scan':
+          case 'project:scan': {
             const scanResult = await projectScanner.scan();
             ws.send(JSON.stringify({ type: 'project:scan-result', payload: scanResult }));
             break;
+          }
           case 'project:info':
             ws.send(JSON.stringify({ type: 'project:info', payload: projectRoot }));
             break;
-          case 'agents:list':
+          case 'agents:list': {
             const agents = await projectConfig.listAvailableAgents();
             ws.send(JSON.stringify({ type: 'agents:list-result', payload: agents }));
             break;
-          case 'rules:list':
+          }
+          case 'rules:list': {
             const rules = await projectConfig.listCursorRulesDetailed();
             ws.send(JSON.stringify({ type: 'rules:list-result', payload: rules }));
             break;
-          case 'rules:toggle':
+          }
+          case 'rules:toggle': {
             const updatedRules = await projectConfig.toggleCursorRule(message.payload.ruleId, message.payload.enabled);
             broadcast({ type: 'rules:update', payload: updatedRules });
             break;
+          }
           case 'docs:read':
             try {
               const docPath = message.payload.docPath;
@@ -358,7 +383,7 @@ ${audienceContent}
               }
               const docContent = await fs.readFile(fullPath, 'utf-8');
               ws.send(JSON.stringify({ type: 'docs:content', payload: { path: docPath, content: docContent } }));
-            } catch (err) {
+            } catch {
               ws.send(JSON.stringify({ type: 'docs:error', payload: { error: 'Failed to read document' } }));
             }
             break;
@@ -366,7 +391,7 @@ ${audienceContent}
             try {
               const claudeFiles = await projectConfig.listClaudeMdFiles();
               ws.send(JSON.stringify({ type: 'claude:list-result', payload: claudeFiles }));
-            } catch (err) {
+            } catch {
               ws.send(JSON.stringify({ type: 'claude:error', payload: { error: 'Failed to list CLAUDE.md files' } }));
             }
             break;
@@ -374,7 +399,7 @@ ${audienceContent}
             try {
               const claudeContent = await projectConfig.readClaudeMdFile(message.payload.path);
               ws.send(JSON.stringify({ type: 'claude:content', payload: { path: message.payload.path, content: claudeContent } }));
-            } catch (err) {
+            } catch {
               ws.send(JSON.stringify({ type: 'claude:error', payload: { error: 'Failed to read CLAUDE.md' } }));
             }
             break;
@@ -385,7 +410,7 @@ ${audienceContent}
               // Refresh and broadcast config update
               const updatedConfig = await projectConfig.refresh();
               broadcast({ type: 'config:update', payload: updatedConfig });
-            } catch (err) {
+            } catch {
               ws.send(JSON.stringify({ type: 'claude:error', payload: { error: 'Failed to apply CLAUDE.md' } }));
             }
             break;
@@ -393,7 +418,7 @@ ${audienceContent}
             try {
               const depResults = await checkAllDependencies();
               ws.send(JSON.stringify({ type: 'dependencies:result', payload: depResults }));
-            } catch (err) {
+            } catch {
               ws.send(JSON.stringify({ type: 'dependencies:error', payload: { error: 'Failed to check dependencies' } }));
             }
             break;
@@ -401,7 +426,7 @@ ${audienceContent}
             try {
               const repoAgents = await projectConfig.listRepoAgents();
               ws.send(JSON.stringify({ type: 'agents:repo-result', payload: repoAgents }));
-            } catch (err) {
+            } catch {
               ws.send(JSON.stringify({ type: 'agents:error', payload: { error: 'Failed to list repo agents' } }));
             }
             break;
@@ -815,6 +840,687 @@ ${audienceContent}
             }
             break;
           }
+
+          // Log management handlers
+          case 'logs:list': {
+            try {
+              const sessions = await logManager.listLogs();
+              ws.send(JSON.stringify({
+                type: 'logs:list',
+                payload: sessions.map(s => ({
+                  ...s,
+                  date: s.date.toISOString(),
+                })),
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'logs:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to list logs' },
+              }));
+            }
+            break;
+          }
+
+          case 'logs:read': {
+            try {
+              const { filename } = message.payload as { filename: string };
+              const content = await logManager.readLog(filename);
+              ws.send(JSON.stringify({
+                type: 'logs:content',
+                payload: { filename, content },
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'logs:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to read log' },
+              }));
+            }
+            break;
+          }
+
+          case 'logs:delete': {
+            try {
+              const { filename } = message.payload as { filename: string };
+              await logManager.deleteLog(filename);
+              ws.send(JSON.stringify({
+                type: 'logs:deleted',
+                payload: { filename },
+              }));
+              // Send updated list after deletion
+              const sessions = await logManager.listLogs();
+              ws.send(JSON.stringify({
+                type: 'logs:list',
+                payload: sessions.map(s => ({
+                  ...s,
+                  date: s.date.toISOString(),
+                })),
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'logs:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to delete log' },
+              }));
+            }
+            break;
+          }
+
+          case 'logs:cleanup': {
+            try {
+              const { keepDays } = message.payload as { keepDays: number };
+              const deletedCount = await logManager.cleanupOldLogs(keepDays);
+              ws.send(JSON.stringify({
+                type: 'logs:cleanup:result',
+                payload: { deletedCount },
+              }));
+              // Send updated list after cleanup
+              const sessions = await logManager.listLogs();
+              ws.send(JSON.stringify({
+                type: 'logs:list',
+                payload: sessions.map(s => ({
+                  ...s,
+                  date: s.date.toISOString(),
+                })),
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'logs:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to cleanup logs' },
+              }));
+            }
+            break;
+          }
+
+          // Troubleshoot handler - run Claude CLI in background
+          case 'troubleshoot:launch': {
+            try {
+              const { errorLog } = message.payload as { errorLog: string };
+              
+              // Set up event listeners for this session
+              const onStatus = (status: { running: boolean; startedAt: Date | null }) => {
+                ws.send(JSON.stringify({
+                  type: 'troubleshoot:status',
+                  payload: {
+                    running: status.running,
+                    startedAt: status.startedAt?.toISOString() || null,
+                  },
+                }));
+              };
+              
+              const onOutput = (text: string) => {
+                ws.send(JSON.stringify({
+                  type: 'troubleshoot:output',
+                  payload: { text },
+                }));
+              };
+              
+              const onComplete = (result: { success: boolean; output: string }) => {
+                ws.send(JSON.stringify({
+                  type: 'troubleshoot:complete',
+                  payload: result,
+                }));
+                // Remove listeners after completion
+                troubleshootRunner.off('status', onStatus);
+                troubleshootRunner.off('output', onOutput);
+                troubleshootRunner.off('complete', onComplete);
+                troubleshootRunner.off('error', onError);
+                troubleshootRunner.off('cancelled', onCancelled);
+              };
+              
+              const onError = (error: string) => {
+                ws.send(JSON.stringify({
+                  type: 'troubleshoot:error',
+                  payload: { error },
+                }));
+                // Remove listeners after error
+                troubleshootRunner.off('status', onStatus);
+                troubleshootRunner.off('output', onOutput);
+                troubleshootRunner.off('complete', onComplete);
+                troubleshootRunner.off('error', onError);
+                troubleshootRunner.off('cancelled', onCancelled);
+              };
+              
+              const onCancelled = () => {
+                ws.send(JSON.stringify({ type: 'troubleshoot:cancelled' }));
+                // Remove listeners after cancellation
+                troubleshootRunner.off('status', onStatus);
+                troubleshootRunner.off('output', onOutput);
+                troubleshootRunner.off('complete', onComplete);
+                troubleshootRunner.off('error', onError);
+                troubleshootRunner.off('cancelled', onCancelled);
+              };
+              
+              // Add listeners
+              troubleshootRunner.on('status', onStatus);
+              troubleshootRunner.on('output', onOutput);
+              troubleshootRunner.on('complete', onComplete);
+              troubleshootRunner.on('error', onError);
+              troubleshootRunner.on('cancelled', onCancelled);
+              
+              // Start the troubleshoot run
+              await troubleshootRunner.run(errorLog);
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'troubleshoot:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to start troubleshoot' },
+              }));
+            }
+            break;
+          }
+
+          case 'troubleshoot:cancel': {
+            troubleshootRunner.cancel();
+            break;
+          }
+
+          // Stories generator handlers - convert PRD.md to prd.json
+          case 'stories:generate': {
+            try {
+              // Set up event listeners for this session
+              const onStatus = (status: { generating: boolean; startedAt: Date | null }) => {
+                ws.send(JSON.stringify({
+                  type: 'stories:status',
+                  payload: {
+                    generating: status.generating,
+                    startedAt: status.startedAt?.toISOString() || null,
+                  },
+                }));
+              };
+              
+              const onOutput = (text: string) => {
+                ws.send(JSON.stringify({
+                  type: 'stories:output',
+                  payload: { text },
+                }));
+              };
+              
+              const onComplete = (prdJson: { branchName: string; userStories: unknown[] }) => {
+                ws.send(JSON.stringify({
+                  type: 'stories:complete',
+                  payload: prdJson,
+                }));
+                // Remove listeners after completion
+                storiesGenerator.off('status', onStatus);
+                storiesGenerator.off('output', onOutput);
+                storiesGenerator.off('complete', onComplete);
+                storiesGenerator.off('error', onError);
+                storiesGenerator.off('cancelled', onCancelled);
+              };
+              
+              const onError = (error: string) => {
+                ws.send(JSON.stringify({
+                  type: 'stories:error',
+                  payload: { error },
+                }));
+                // Remove listeners after error
+                storiesGenerator.off('status', onStatus);
+                storiesGenerator.off('output', onOutput);
+                storiesGenerator.off('complete', onComplete);
+                storiesGenerator.off('error', onError);
+                storiesGenerator.off('cancelled', onCancelled);
+              };
+              
+              const onCancelled = () => {
+                ws.send(JSON.stringify({ type: 'stories:cancelled' }));
+                // Remove listeners after cancellation
+                storiesGenerator.off('status', onStatus);
+                storiesGenerator.off('output', onOutput);
+                storiesGenerator.off('complete', onComplete);
+                storiesGenerator.off('error', onError);
+                storiesGenerator.off('cancelled', onCancelled);
+              };
+              
+              // Add listeners
+              storiesGenerator.on('status', onStatus);
+              storiesGenerator.on('output', onOutput);
+              storiesGenerator.on('complete', onComplete);
+              storiesGenerator.on('error', onError);
+              storiesGenerator.on('cancelled', onCancelled);
+              
+              // Start the generation
+              await storiesGenerator.generate();
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'stories:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to start stories generation' },
+              }));
+            }
+            break;
+          }
+
+          case 'stories:cancel': {
+            storiesGenerator.cancel();
+            break;
+          }
+
+          case 'stories:save': {
+            try {
+              const { prdJson } = message.payload as { prdJson: { branchName: string; userStories: unknown[] } };
+              const prdJsonPath = path.join(TARGET_PROJECT_PATH, 'prd.json');
+              await fs.writeFile(prdJsonPath, JSON.stringify(prdJson, null, 2), 'utf-8');
+              ws.send(JSON.stringify({
+                type: 'stories:saved',
+                payload: { success: true },
+              }));
+              // Refresh project config to update hasPrdJson
+              const updatedConfig = await projectConfig.refresh();
+              broadcast({ type: 'config:update', payload: updatedConfig });
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'stories:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to save prd.json' },
+              }));
+            }
+            break;
+          }
+
+          // ============================================================================
+          // Iterative PRD Generator handlers (Q&A Interview + Versioning)
+          // ============================================================================
+
+          case 'prd-interview:check-versions': {
+            try {
+              const versions = await iterativePrdGenerator.checkVersions();
+              ws.send(JSON.stringify({
+                type: 'prd-interview:versions',
+                payload: versions,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to check versions' },
+              }));
+            }
+            break;
+          }
+
+          case 'prd-interview:start': {
+            try {
+              const { description, additionalContext, contextDocs, previousVersions, startFresh, skipQuestions } = message.payload as {
+                description: string;
+                additionalContext?: string;
+                contextDocs: string[];
+                previousVersions: number[];
+                startFresh: boolean;
+                skipQuestions?: boolean;
+              };
+              const session = await iterativePrdGenerator.startInterview(
+                description,
+                contextDocs,
+                previousVersions,
+                startFresh,
+                additionalContext,
+                skipQuestions
+              );
+              ws.send(JSON.stringify({
+                type: 'prd-interview:session',
+                payload: session,
+              }));
+              // If skipQuestions, go directly to PRD generation, otherwise start questions
+              if (skipQuestions) {
+                iterativePrdGenerator.generatePRD();
+              } else {
+                iterativePrdGenerator.generateQuestions();
+              }
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to start interview' },
+              }));
+            }
+            break;
+          }
+
+          case 'prd-interview:analyze-codebase': {
+            try {
+              iterativePrdGenerator.analyzeCodebase();
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to start codebase analysis' },
+              }));
+            }
+            break;
+          }
+
+          case 'prd-interview:answer': {
+            try {
+              const { roundNumber, answers } = message.payload as {
+                roundNumber: number;
+                answers: Array<{ questionId: string; answer?: string; skipped: boolean }>;
+              };
+              const session = await iterativePrdGenerator.submitAnswers(roundNumber, answers);
+              ws.send(JSON.stringify({
+                type: 'prd-interview:session',
+                payload: session,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to submit answers' },
+              }));
+            }
+            break;
+          }
+
+          case 'prd-interview:more': {
+            try {
+              iterativePrdGenerator.requestMoreQuestions();
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to request more questions' },
+              }));
+            }
+            break;
+          }
+
+          case 'prd-interview:generate': {
+            try {
+              iterativePrdGenerator.generatePRD();
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to start PRD generation' },
+              }));
+            }
+            break;
+          }
+
+          case 'prd-interview:cancel': {
+            iterativePrdGenerator.cancel();
+            break;
+          }
+
+          case 'prd-interview:resume': {
+            try {
+              const session = await iterativePrdGenerator.resumeSession();
+              if (session) {
+                ws.send(JSON.stringify({
+                  type: 'prd-interview:session',
+                  payload: session,
+                }));
+              } else {
+                // No session to resume - check versions instead
+                const versions = await iterativePrdGenerator.checkVersions();
+                ws.send(JSON.stringify({
+                  type: 'prd-interview:versions',
+                  payload: versions,
+                }));
+              }
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to resume session' },
+              }));
+            }
+            break;
+          }
+
+          case 'prd-interview:clear': {
+            try {
+              await iterativePrdGenerator.clearSession();
+              const versions = await iterativePrdGenerator.checkVersions();
+              ws.send(JSON.stringify({
+                type: 'prd-interview:versions',
+                payload: versions,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'prd-interview:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to clear session' },
+              }));
+            }
+            break;
+          }
+
+          // ============================================================================
+          // External Repos WebSocket Handlers
+          // ============================================================================
+
+          case 'external-repos:list': {
+            try {
+              const { projectId } = message.payload as { projectId: string };
+              const repos = ExternalRepos.getExternalRepos(projectId);
+              ws.send(JSON.stringify({
+                type: 'external-repos:list',
+                payload: repos,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to list repos' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:add': {
+            try {
+              const { projectId, ...repoData } = message.payload as {
+                projectId: string;
+                url: string;
+                alias: string;
+                branch?: string;
+                fetchStrategy?: ExternalRepos.RepoFetchStrategy;
+                paths?: string[];
+                mcpHints?: string[];
+                maxTokens?: number;
+                purpose?: string;
+                cacheTTLHours?: number;
+                disableCache?: boolean;
+              };
+              const repo = await ExternalRepos.addExternalRepo(projectId, repoData);
+              ws.send(JSON.stringify({
+                type: 'external-repos:added',
+                payload: repo,
+              }));
+              // Send updated list
+              const repos = ExternalRepos.getExternalRepos(projectId);
+              broadcast({ type: 'external-repos:list', payload: repos });
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to add repo' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:update': {
+            try {
+              const { projectId, repoId, ...updates } = message.payload as {
+                projectId: string;
+                repoId: string;
+                [key: string]: unknown;
+              };
+              const repo = ExternalRepos.updateExternalRepo(projectId, repoId, updates);
+              ws.send(JSON.stringify({
+                type: 'external-repos:updated',
+                payload: repo,
+              }));
+              // Send updated list
+              const repos = ExternalRepos.getExternalRepos(projectId);
+              broadcast({ type: 'external-repos:list', payload: repos });
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to update repo' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:remove': {
+            try {
+              const { projectId, repoId } = message.payload as { projectId: string; repoId: string };
+              ExternalRepos.removeExternalRepo(projectId, repoId);
+              ws.send(JSON.stringify({
+                type: 'external-repos:removed',
+                payload: { repoId },
+              }));
+              // Send updated list
+              const repos = ExternalRepos.getExternalRepos(projectId);
+              broadcast({ type: 'external-repos:list', payload: repos });
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to remove repo' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:fetch': {
+            try {
+              const { projectId, repoIds, forceRefresh } = message.payload as {
+                projectId: string;
+                repoIds: string[];
+                forceRefresh?: boolean;
+              };
+              const result = await ExternalRepos.fetchAndBuildContext(projectId, repoIds, { forceRefresh });
+              ws.send(JSON.stringify({
+                type: 'external-repos:fetched',
+                payload: {
+                  contents: result.contents,
+                  summary: result.summary,
+                },
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to fetch repos' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:cache-status': {
+            try {
+              const { projectId, repoIds } = message.payload as { projectId: string; repoIds?: string[] };
+              const status = ExternalRepos.getReposCacheStatus(projectId, repoIds);
+              ws.send(JSON.stringify({
+                type: 'external-repos:cache-status',
+                payload: status,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to get cache status' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:clear-cache': {
+            try {
+              const { projectId, repoIds } = message.payload as { projectId: string; repoIds?: string[] };
+              ExternalRepos.clearCache(projectId, repoIds);
+              ws.send(JSON.stringify({
+                type: 'external-repos:cache-cleared',
+                payload: { repoIds: repoIds || 'all' },
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to clear cache' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:mcp-status': {
+            try {
+              const { projectId } = message.payload as { projectId: string };
+              const status = ExternalRepos.getMcpStatus(projectId);
+              ws.send(JSON.stringify({
+                type: 'external-repos:mcp-status',
+                payload: status,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to get MCP status' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:validate-url': {
+            try {
+              const { url } = message.payload as { url: string };
+              const result = await ExternalRepos.validateRepoUrl(url);
+              ws.send(JSON.stringify({
+                type: 'external-repos:url-validated',
+                payload: result,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to validate URL' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:validate-token': {
+            try {
+              const { token } = message.payload as { token: string };
+              const result = await validateGitHubToken(token);
+              ws.send(JSON.stringify({
+                type: 'external-repos:token-validated',
+                payload: result,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to validate token' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:set-token': {
+            try {
+              const { token } = message.payload as { token: string };
+              // First validate the token
+              const validation = await validateGitHubToken(token);
+              if (!validation.valid) {
+                ws.send(JSON.stringify({
+                  type: 'external-repos:token-set',
+                  payload: { success: false, error: validation.error || 'Invalid token' },
+                }));
+                break;
+              }
+              // Save the token
+              setGitHubToken(token);
+              ws.send(JSON.stringify({
+                type: 'external-repos:token-set',
+                payload: { success: true, login: validation.login, scopes: validation.scopes },
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to set token' },
+              }));
+            }
+            break;
+          }
+
+          case 'external-repos:cache-stats': {
+            try {
+              const stats = ExternalRepos.getCacheStatistics();
+              ws.send(JSON.stringify({
+                type: 'external-repos:cache-stats',
+                payload: stats,
+              }));
+            } catch (error) {
+              ws.send(JSON.stringify({
+                type: 'external-repos:error',
+                payload: { error: error instanceof Error ? error.message : 'Failed to get cache stats' },
+              }));
+            }
+            break;
+          }
         }
       } catch (err) {
         logger.error('Error handling WebSocket message', { error: err instanceof Error ? err.message : 'Unknown error' });
@@ -912,6 +1618,39 @@ ${audienceContent}
     broadcast({ type: 'prd:error', payload: { error: 'PRD generation cancelled' } });
   });
 
+  // Iterative PRD generator events
+  iterativePrdGenerator.on('session', (session) => {
+    broadcast({ type: 'prd-interview:session', payload: session });
+  });
+
+  iterativePrdGenerator.on('analysis', (analysis) => {
+    broadcast({ type: 'prd-interview:analysis', payload: analysis });
+  });
+
+  iterativePrdGenerator.on('questions', (data) => {
+    broadcast({ type: 'prd-interview:questions', payload: data });
+  });
+
+  iterativePrdGenerator.on('status', (status) => {
+    broadcast({ type: 'prd-interview:status', payload: status });
+  });
+
+  iterativePrdGenerator.on('output', (data) => {
+    broadcast({ type: 'prd-interview:output', payload: data });
+  });
+
+  iterativePrdGenerator.on('complete', (result) => {
+    broadcast({ type: 'prd-interview:complete', payload: result });
+  });
+
+  iterativePrdGenerator.on('cancelled', () => {
+    broadcast({ type: 'prd-interview:cancelled' });
+  });
+
+  iterativePrdGenerator.on('log', (text) => {
+    logger.debug('PRD Interview', { message: text });
+  });
+
   // Instance spawner events
   instanceSpawner.on('stopped', (data: { projectId: string }) => {
     broadcast({ type: 'launcher:instance:stopped', payload: data });
@@ -998,7 +1737,7 @@ ${audienceContent}
     try {
       const content = await projectConfig.readFile(req.params.file);
       res.json({ content });
-    } catch (err) {
+    } catch {
       res.status(404).json({ error: 'File not found' });
     }
   });
@@ -1007,7 +1746,7 @@ ${audienceContent}
     try {
       await projectConfig.writeFile(req.params.file, req.body.content);
       res.json({ success: true });
-    } catch (err) {
+    } catch {
       res.status(500).json({ error: 'Failed to save file' });
     }
   });

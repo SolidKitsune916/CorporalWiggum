@@ -60,14 +60,13 @@ export async function checkDependency(dep: DependencyDef): Promise<DependencyChe
     // First check if command exists in PATH
     const whereProc = spawn(whichCmd, [dep.command], { shell: true });
     let pathOutput = '';
-    let errorOutput = '';
 
     whereProc.stdout.on('data', (data) => {
       pathOutput += data.toString();
     });
 
-    whereProc.stderr.on('data', (data) => {
-      errorOutput += data.toString();
+    whereProc.stderr.on('data', () => {
+      // Ignore stderr - we only care about the exit code
     });
 
     whereProc.on('close', (code) => {

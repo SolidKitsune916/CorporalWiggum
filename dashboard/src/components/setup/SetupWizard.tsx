@@ -9,7 +9,8 @@ import { CursorRulesConfig } from './CursorRulesConfig';
 import { PromptsConfig } from './PromptsConfig';
 import { ClaudeMdConfig } from './ClaudeMdConfig';
 import { DependencyChecker } from './DependencyChecker';
-import type { ProjectConfig, AgentInfo, CursorRuleInfo, GitStatus, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo } from '@/types';
+import { ExternalReposConfig } from './ExternalReposConfig';
+import type { ProjectConfig, AgentInfo, CursorRuleInfo, GitStatus, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ExternalRepoReference, RepoCacheStatus, GitHubMcpConfig, ClientCommand } from '@/types';
 import {
   Settings,
   FileCode,
@@ -58,6 +59,15 @@ interface SetupWizardProps {
   onInstallAgentGlobal?: (agentId: string) => void;
   onInstallAgentProject?: (agentId: string) => void;
   onInstallAllAgentsGlobal?: () => void;
+  // External repos props
+  externalRepos?: ExternalRepoReference[];
+  externalReposCacheStatus?: Record<string, RepoCacheStatus>;
+  externalReposMcpStatus?: GitHubMcpConfig | null;
+  externalReposUrlValidation?: { valid: boolean; error?: string; defaultBranch?: string } | null;
+  sendCommand?: (command: ClientCommand) => void;
+  onClearExternalReposUrlValidation?: () => void;
+  onSetGitHubToken?: (token: string) => void;
+  defaultTab?: string;
 }
 
 export function SetupWizard({
@@ -95,8 +105,22 @@ export function SetupWizard({
   onInstallAgentGlobal,
   onInstallAgentProject,
   onInstallAllAgentsGlobal,
+  // External repos props
+  externalRepos = [],
+  externalReposCacheStatus = {},
+  externalReposMcpStatus = null,
+  externalReposUrlValidation = null,
+  sendCommand,
+  onClearExternalReposUrlValidation,
+  onSetGitHubToken,
+  defaultTab,
 }: SetupWizardProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+  // Use defaultTab directly when provided, otherwise use internal state
+  const [internalTab, setInternalTab] = useState('overview');
+  const activeTab = defaultTab || internalTab;
+  const setActiveTab = (tab: string) => {
+    setInternalTab(tab);
+  };
 
   const configItems = [
     {
@@ -198,13 +222,14 @@ export function SetupWizard({
         </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
           <TabsTrigger value="agents">AGENTS.md</TabsTrigger>
           <TabsTrigger value="claudemd">CLAUDE.md</TabsTrigger>
           <TabsTrigger value="specialists">Specialists</TabsTrigger>
           <TabsTrigger value="cursor">Cursor Rules</TabsTrigger>
+          <TabsTrigger value="external-repos">External Repos</TabsTrigger>
           <TabsTrigger value="prompts">Prompts</TabsTrigger>
         </TabsList>
 
@@ -349,6 +374,29 @@ export function SetupWizard({
 
         <TabsContent value="prompts">
           <PromptsConfig onReadFile={onReadFile} onWriteFile={onWriteFile} />
+        </TabsContent>
+
+        <TabsContent value="external-repos">
+          {sendCommand && projectConfig ? (
+            <ExternalReposConfig
+              projectId={projectConfig.projectId || projectConfig.projectPath}
+              sendCommand={sendCommand}
+              externalRepos={externalRepos}
+              cacheStatus={externalReposCacheStatus}
+              mcpStatus={externalReposMcpStatus}
+              urlValidation={externalReposUrlValidation}
+              onClearUrlValidation={onClearExternalReposUrlValidation}
+              onSetGitHubToken={onSetGitHubToken}
+            />
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-muted-foreground text-center">
+                  External repository configuration requires a project to be loaded.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
       </div>

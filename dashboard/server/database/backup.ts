@@ -25,7 +25,7 @@ export class DatabaseBackup {
   /**
    * Create a backup of the database
    */
-  static async createBackup(description?: string): Promise<BackupInfo> {
+  static async createBackup(_description?: string): Promise<BackupInfo> {
     // Ensure backup directory exists
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
 

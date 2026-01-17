@@ -6,17 +6,6 @@ import type { ProjectConfig, AgentInfo, CursorRuleInfo } from '../src/types';
 // Maximum file size for reads (10MB)
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
-const CONFIG_FILES = {
-  'AGENTS.md': 'AGENTS.md',
-  'CLAUDE.md': 'CLAUDE.md',
-  'IMPLEMENTATION_PLAN.md': 'IMPLEMENTATION_PLAN.md',
-  'PROMPT_build.md': 'PROMPT_build.md',
-  'PROMPT_plan.md': 'PROMPT_plan.md',
-  'PROMPT_plan_slc.md': 'PROMPT_plan_slc.md',
-  'PROMPT_plan_work.md': 'PROMPT_plan_work.md',
-  'AUDIENCE_JTBD.md': 'AUDIENCE_JTBD.md',
-};
-
 const ALL_AGENT_IDS = ['react-typescript-expert', 'accessibility-expert', 'qol-ux-expert'];
 
 export class ProjectConfigManager {
@@ -39,6 +28,9 @@ export class ProjectConfigManager {
       hasSpecs: false,
       hasCursorRules: false,
       hasLoopSh: false,
+      hasReadme: false,
+      hasPrdJson: false,
+      hasProgressTxt: false,
       enabledAgents: this.enabledAgents,
     };
     this.refresh();
@@ -69,6 +61,9 @@ export class ProjectConfigManager {
       this.dirExists('specs'),
       this.dirExists('.cursor/rules'),
       this.fileExists('loop.sh'),
+      this.fileExists('README.md'),
+      this.fileExists('prd.json'),
+      this.fileExists('progress.txt'),
     ]);
 
     // Check for CLAUDE.md in both possible locations
@@ -89,6 +84,9 @@ export class ProjectConfigManager {
       hasSpecs: checks[4],
       hasCursorRules: checks[5],
       hasLoopSh: checks[6],
+      hasReadme: checks[7],
+      hasPrdJson: checks[8],
+      hasProgressTxt: checks[9],
       enabledAgents: this.enabledAgents,
     };
 

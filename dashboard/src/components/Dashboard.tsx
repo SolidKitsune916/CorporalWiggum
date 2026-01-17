@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { LoopStatus } from './LoopStatus';
 import { TaskList } from './TaskList';
@@ -9,12 +9,17 @@ import { LoopControls } from './LoopControls';
 import { SetupWizard } from './setup/SetupWizard';
 import { OnboardingWizard } from './setup/OnboardingWizard';
 import { PlanGenerator } from './PlanGenerator';
-import { PRDGenerator } from './PRDGenerator';
+import { IterativePRDGenerator } from './IterativePRDGenerator';
 import { ReviewGenerator } from './ReviewGenerator';
 import { ReviewPanel } from './ReviewPanel';
 import { ExistingDocsViewer } from './ExistingDocsViewer';
 import { WorkflowModeToggle } from './WorkflowModeToggle';
 import { PortsTab } from './PortsTab';
+import { FileEditor } from './FileEditor';
+import { LogHistory } from './LogHistory';
+import { TroubleshootPanel } from './TroubleshootPanel';
+import { StoriesGenerator } from './StoriesGenerator';
+import { SimpleModeChecklist } from './SimpleModeChecklist';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,6 +31,7 @@ import {
   Wand2,
   FileText,
   ListTodo,
+  ListChecks,
   Github,
   FileSearch,
   Home,
@@ -56,10 +62,6 @@ export function Dashboard({ backendPort }: DashboardProps) {
     planOutput,
     planComplete,
     planError,
-    prdStatus,
-    prdOutput,
-    prdComplete,
-    prdError,
     projectScan,
     scanLoading,
     projectInfo,
@@ -77,7 +79,6 @@ export function Dashboard({ backendPort }: DashboardProps) {
     sendCommand,
     clearLogs,
     clearPlanOutput,
-    clearPrdOutput,
     scanProject,
     listAgents,
     listRules,
@@ -127,21 +128,82 @@ export function Dashboard({ backendPort }: DashboardProps) {
     portsError,
     scanPorts,
     killPort,
+    // Log management
+    logSessions,
+    logsLoading,
+    logsError,
+    logContent,
+    logContentLoading,
+    listLogs,
+    readLog,
+    deleteLog,
+    cleanupLogs,
+    // Troubleshoot
+    troubleshootRunning,
+    troubleshootOutput,
+    troubleshootError,
+    launchTroubleshoot,
+    cancelTroubleshoot,
+    clearTroubleshootOutput,
+    // Stories generator
+    storiesGenerating,
+    storiesOutput,
+    storiesComplete,
+    storiesError,
+    generateStories,
+    cancelStories,
+    saveStories,
+    clearStoriesOutput,
+    // Iterative PRD generator
+    prdInterviewSession,
+    prdVersionHistory,
+    prdInterviewAnalysis,
+    prdInterviewQuestions,
+    prdInterviewStatus,
+    prdInterviewOutput,
+    prdInterviewComplete,
+    prdInterviewError,
+    checkPrdVersions,
+    startPrdInterview,
+    analyzePrdCodebase,
+    submitPrdAnswers,
+    requestMorePrdQuestions,
+    generatePrdFromInterview,
+    cancelPrdInterview,
+    resumePrdSession,
+    clearPrdSession,
+    clearPrdInterviewOutput,
+    // External repos
+    externalRepos,
+    externalReposCacheStatus,
+    externalReposMcpStatus,
+    externalReposUrlValidation,
+    clearExternalReposUrlValidation,
+    setGitHubToken,
+    listExternalRepos,
   } = useWebSocket(wsUrl);
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [generateSubTab, setGenerateSubTab] = useState<'plan' | 'review' | 'quality' | 'prd'>('plan');
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSimpleModeChecklist, setShowSimpleModeChecklist] = useState(false);
+  const [generateSubTab, setGenerateSubTab] = useState<'plan' | 'review' | 'quality' | 'prd' | 'stories'>('plan');
+  const [setupDefaultTab, setSetupDefaultTab] = useState<string | undefined>(undefined);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
 
-  // Check if we should show onboarding (AGENTS.md not configured)
-  useEffect(() => {
-    if (projectConfig && !onboardingComplete) {
-      // Show onboarding if AGENTS.md doesn't exist or isn't configured
-      const needsOnboarding = !projectConfig.hasAgentsMd;
-      setShowOnboarding(needsOnboarding);
-    }
+  // Derive showOnboarding from projectConfig instead of setting via useEffect
+  const showOnboarding = useMemo(() => {
+    if (!projectConfig || onboardingComplete) return false;
+    return !projectConfig.hasAgentsMd;
   }, [projectConfig, onboardingComplete]);
+
+  // Track selected external repos for PRD context
+  const [selectedExternalRepoIds, setSelectedExternalRepoIds] = useState<string[]>([]);
+
+  // Fetch external repos when on PRD sub-tab
+  useEffect(() => {
+    if (connected && activeTab === 'generate' && generateSubTab === 'prd') {
+      listExternalRepos();
+    }
+  }, [connected, activeTab, generateSubTab, listExternalRepos]);
 
   // Get workflow mode when connected
   useEffect(() => {
@@ -157,9 +219,66 @@ export function Dashboard({ backendPort }: DashboardProps) {
     }
   }, [activeTab, projectScan, scanLoading, connected, scanProject]);
 
+  // Handle tab changes - clear setupDefaultTab when navigating away from setup
+  const handleTabChange = (newTab: string) => {
+    if (newTab !== 'setup' && setupDefaultTab) {
+      setSetupDefaultTab(undefined);
+    }
+    setActiveTab(newTab);
+  };
+
+  // Fetch external repos when on PRD tab
+  useEffect(() => {
+    const projectId = projectConfig?.projectId || projectConfig?.projectPath;
+    if (generateSubTab === 'prd' && projectId && connected) {
+      sendCommand({
+        type: 'external-repos:list',
+        payload: { projectId },
+      });
+    }
+  }, [generateSubTab, projectConfig?.projectId, projectConfig?.projectPath, connected, sendCommand]);
+
+  // Note: External repos are managed locally for now
+  // TODO: Move external repos state and message handling to useWebSocket hook
+  // The WebSocket handlers are in place on the server side,
+  // but we need to add message handling in useWebSocket.ts for full integration
+
   const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
     setOnboardingComplete(true);
+  };
+
+  // Handle workflow mode change - show checklist if switching to simple with missing files
+  const handleWorkflowModeChange = (mode: 'simple' | 'advanced') => {
+    setWorkflowMode(mode);
+    
+    // If switching to simple mode, check if required files exist
+    if (mode === 'simple' && projectConfig) {
+      const hasPrdJson = projectConfig.hasPrdJson ?? false;
+      const hasAgents = projectConfig.hasAgentsMd ?? false;
+      const hasProgress = projectConfig.hasProgressTxt ?? false;
+      
+      // Show checklist if any required file is missing
+      if (!hasPrdJson || !hasAgents || !hasProgress) {
+        setShowSimpleModeChecklist(true);
+      }
+    }
+  };
+
+  // Create AGENTS.md from template
+  const handleCreateAgents = () => {
+    sendCommand({ type: 'template:create', payload: { template: 'AGENTS.md' } });
+  };
+
+  // Create progress.txt from template
+  const handleCreateProgress = () => {
+    sendCommand({ type: 'template:create', payload: { template: 'progress.txt' } });
+  };
+
+  // Navigate to Generate tab and switch to Stories sub-tab
+  const handleNavigateToGenerate = () => {
+    setShowSimpleModeChecklist(false);
+    setActiveTab('generate');
+    setGenerateSubTab('prd');
   };
 
   const handleSaveAgentsMd = (content: string) => {
@@ -167,8 +286,8 @@ export function Dashboard({ backendPort }: DashboardProps) {
   };
 
   const handleRunWizard = () => {
+    // Reset onboardingComplete to trigger showOnboarding (which is derived from projectConfig)
     setOnboardingComplete(false);
-    setShowOnboarding(true);
   };
 
   // Show onboarding wizard if needed
@@ -194,23 +313,27 @@ export function Dashboard({ backendPort }: DashboardProps) {
       <header className="border-b bg-card px-6 py-4" role="banner">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-              W
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg overflow-hidden bg-primary/10">
+              <img 
+                src="/logo.png" 
+                alt="Corporal Wiggum Logo" 
+                className="h-full w-full object-contain"
+              />
             </div>
             <div>
               <h1 className="text-xl font-semibold">
-                <span className="text-primary">WIGGUM</span>
-                <span className="text-muted-foreground font-normal text-sm ml-2">R.A.L.P.H.</span>
+                <span className="text-primary">Corporal Wiggum</span>
+                <span className="text-muted-foreground font-normal text-sm ml-2">Codename: R.A.L.P.H.</span>
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Recursive Autonomous Loop for Programming Humans
+              <p className="text-sm text-muted-foreground italic">
+                Recursive Autonomous Loop for Programming Heuristically
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <WorkflowModeToggle
               mode={workflowMode}
-              onToggle={setWorkflowMode}
+              onToggle={handleWorkflowModeChange}
             />
             <Button
               variant="outline"
@@ -255,8 +378,8 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
       {/* Main Content */}
       <div className="container mx-auto p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-[625px]">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6 lg:w-[750px]">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
@@ -264,6 +387,10 @@ export function Dashboard({ backendPort }: DashboardProps) {
             <TabsTrigger value="generate" className="gap-2">
               <Wand2 className="h-4 w-4" />
               Generate
+            </TabsTrigger>
+            <TabsTrigger value="files" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Files
             </TabsTrigger>
             <TabsTrigger value="ports" className="gap-2">
               <Server className="h-4 w-4" />
@@ -292,6 +419,10 @@ export function Dashboard({ backendPort }: DashboardProps) {
             <ExistingDocsViewer
               projectConfig={projectConfig}
               onReadFile={readConfigFile}
+              onEditFile={(filename: string) => {
+                readConfigFile(filename);
+                setActiveTab('files');
+              }}
               onNavigateToGenerate={(tab) => {
                 setActiveTab('generate');
                 setGenerateSubTab(tab);
@@ -329,11 +460,19 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
           {/* Generate Tab */}
           <TabsContent value="generate">
-            <Tabs value={generateSubTab} onValueChange={(v) => setGenerateSubTab(v as 'plan' | 'review' | 'quality' | 'prd')} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
+            <Tabs value={generateSubTab} onValueChange={(v) => setGenerateSubTab(v as 'plan' | 'review' | 'quality' | 'prd' | 'stories')} className="space-y-4">
+              <TabsList className="grid w-full grid-cols-5 lg:w-[900px]">
+                <TabsTrigger value="stories" className="gap-2">
+                  <ListChecks className="h-4 w-4" />
+                  User Stories
+                </TabsTrigger>
                 <TabsTrigger value="plan" className="gap-2">
                   <ListTodo className="h-4 w-4" />
-                  Implementation Plan
+                  Impl. Plan
+                </TabsTrigger>
+                <TabsTrigger value="prd" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  PRD
                 </TabsTrigger>
                 <TabsTrigger value="review" className="gap-2">
                   <FileSearch className="h-4 w-4" />
@@ -341,13 +480,23 @@ export function Dashboard({ backendPort }: DashboardProps) {
                 </TabsTrigger>
                 <TabsTrigger value="quality" className="gap-2">
                   <Sparkles className="h-4 w-4" />
-                  Quality Review
-                </TabsTrigger>
-                <TabsTrigger value="prd" className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  PRD & Audience
+                  Quality
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="stories">
+                <StoriesGenerator
+                  hasPrd={projectConfig?.hasPRD ?? false}
+                  isGenerating={storiesGenerating}
+                  output={storiesOutput}
+                  complete={storiesComplete}
+                  error={storiesError}
+                  onGenerate={generateStories}
+                  onCancel={cancelStories}
+                  onSave={saveStories}
+                  onClear={clearStoriesOutput}
+                />
+              </TabsContent>
 
               <TabsContent value="plan">
                 <PlanGenerator
@@ -399,11 +548,15 @@ export function Dashboard({ backendPort }: DashboardProps) {
               </TabsContent>
 
               <TabsContent value="prd">
-                <PRDGenerator
-                  prdStatus={prdStatus}
-                  prdOutput={prdOutput}
-                  prdComplete={prdComplete}
-                  prdError={prdError}
+                <IterativePRDGenerator
+                  session={prdInterviewSession}
+                  versionHistory={prdVersionHistory}
+                  analysis={prdInterviewAnalysis}
+                  questions={prdInterviewQuestions}
+                  status={prdInterviewStatus}
+                  output={prdInterviewOutput}
+                  complete={prdInterviewComplete}
+                  error={prdInterviewError}
                   discoveredDocs={projectScan?.allMarkdownFiles || []}
                   selectedDocPaths={selectedDocPaths}
                   onDocSelectionChange={setSelectedDocPaths}
@@ -411,24 +564,53 @@ export function Dashboard({ backendPort }: DashboardProps) {
                   previewDoc={previewDoc}
                   isLoadingPreview={isLoadingPreview}
                   onClosePreview={closeDocPreview}
-                  onGeneratePRD={(options) =>
-                    sendCommand({ type: 'prd:generate', payload: options })
-                  }
-                  onCancelPRD={() => sendCommand({ type: 'prd:cancel' })}
+                  externalRepos={externalRepos}
+                  selectedExternalRepoIds={selectedExternalRepoIds}
+                  onExternalRepoSelectionChange={setSelectedExternalRepoIds}
+                  mcpStatus={externalReposMcpStatus}
+                  onNavigateToExternalRepos={() => {
+                    setSetupDefaultTab('external-repos');
+                    setActiveTab('setup');
+                  }}
+                  onCheckVersions={checkPrdVersions}
+                  onStartInterview={startPrdInterview}
+                  onAnalyzeCodebase={analyzePrdCodebase}
+                  onSubmitAnswers={submitPrdAnswers}
+                  onRequestMoreQuestions={requestMorePrdQuestions}
+                  onGeneratePRD={generatePrdFromInterview}
+                  onCancel={cancelPrdInterview}
+                  onResume={resumePrdSession}
+                  onClearSession={clearPrdSession}
+                  onClearOutput={clearPrdInterviewOutput}
                   onInsertPRD={(prd, audience) => {
+                    // Get version number from complete result or default to unversioned
+                    const version = prdInterviewComplete?.version.version;
+                    const prdFilename = version ? `PRD_v${version}.md` : 'PRD.md';
+                    const audienceFilename = version ? `AUDIENCE_JTBD_v${version}.md` : 'AUDIENCE_JTBD.md';
                     sendCommand({
                       type: 'config:write',
-                      payload: { file: 'PRD.md', content: prd },
+                      payload: { file: prdFilename, content: prd },
                     });
                     sendCommand({
                       type: 'config:write',
-                      payload: { file: 'AUDIENCE_JTBD.md', content: audience },
+                      payload: { file: audienceFilename, content: audience },
                     });
                   }}
-                  onClearOutput={clearPrdOutput}
                 />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          {/* Files Tab */}
+          <TabsContent value="files">
+            <FileEditor
+              onReadFile={readConfigFile}
+              onWriteFile={(filename: string, content: string) => {
+                sendCommand({ type: 'config:write', payload: { file: filename, content } });
+              }}
+              fileContent={configPreviewDoc}
+              isLoading={configPreviewLoading}
+            />
           </TabsContent>
 
           {/* Ports Tab */}
@@ -444,7 +626,33 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
           {/* Logs Tab */}
           <TabsContent value="logs">
-            <LogViewer logs={logs} onClear={clearLogs} />
+            <div className="space-y-6">
+              {/* Current session logs */}
+              <LogViewer logs={logs} onClear={clearLogs} />
+              
+              {/* Troubleshoot with Claude CLI */}
+              <TroubleshootPanel
+                onLaunchTroubleshoot={launchTroubleshoot}
+                onCancelTroubleshoot={cancelTroubleshoot}
+                onClearOutput={clearTroubleshootOutput}
+                isRunning={troubleshootRunning}
+                output={troubleshootOutput}
+                error={troubleshootError}
+              />
+              
+              {/* Log history for past sessions */}
+              <LogHistory
+                sessions={logSessions}
+                isLoading={logsLoading}
+                error={logsError}
+                onListLogs={listLogs}
+                onReadLog={readLog}
+                onDeleteLog={deleteLog}
+                onCleanupLogs={cleanupLogs}
+                logContent={logContent}
+                logContentLoading={logContentLoading}
+              />
+            </div>
           </TabsContent>
 
           {/* Setup Tab */}
@@ -489,10 +697,33 @@ export function Dashboard({ backendPort }: DashboardProps) {
               onInstallAgentGlobal={installAgentGlobal}
               onInstallAgentProject={installAgentProject}
               onInstallAllAgentsGlobal={installAllAgentsGlobal}
+              // External repos
+              externalRepos={externalRepos}
+              externalReposCacheStatus={externalReposCacheStatus}
+              externalReposMcpStatus={externalReposMcpStatus}
+              externalReposUrlValidation={externalReposUrlValidation}
+              sendCommand={sendCommand}
+              onClearExternalReposUrlValidation={clearExternalReposUrlValidation}
+              onSetGitHubToken={setGitHubToken}
+              defaultTab={setupDefaultTab}
             />
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Simple Mode Setup Checklist Modal */}
+      <SimpleModeChecklist
+        isOpen={showSimpleModeChecklist}
+        onClose={() => setShowSimpleModeChecklist(false)}
+        projectConfig={projectConfig}
+        onCreateAgents={handleCreateAgents}
+        onCreateProgress={handleCreateProgress}
+        onGenerateStories={generateStories}
+        isGeneratingStories={storiesGenerating}
+        storiesComplete={storiesComplete}
+        onSaveStories={saveStories}
+        onNavigateToGenerate={handleNavigateToGenerate}
+      />
     </div>
   );
 }

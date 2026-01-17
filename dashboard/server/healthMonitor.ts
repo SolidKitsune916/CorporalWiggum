@@ -189,7 +189,7 @@ export class HealthMonitor extends EventEmitter {
    * Recover a session on server startup
    * Returns the session if it can be recovered, null otherwise
    */
-  async recoverSession(projectPath: string): Promise<ActiveSession | null> {
+  async recoverSession(_projectPath: string): Promise<ActiveSession | null> {
     const sessionRepo = getSessionRepository();
 
     // Find active session for this project

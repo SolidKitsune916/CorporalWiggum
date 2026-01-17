@@ -11,6 +11,7 @@ interface PRDGeneratorStatus {
 
 interface PRDGeneratorOptions {
   productName: string;
+  overallDescription: string;  // High-level description of the application
   problemStatement: string;
   targetAudience: string;
   keyCapabilities: string[];
@@ -93,7 +94,7 @@ export class PRDGenerator extends EventEmitter {
               ? content.substring(0, 10000) + '\n\n[... truncated ...]'
               : content;
             contextSection += `### ${docPath}\n\`\`\`markdown\n${truncatedContent}\n\`\`\`\n\n`;
-          } catch (err) {
+          } catch {
             // Skip files that can't be read
             this.emit('log', `Warning: Could not read context doc: ${docPath}`);
           }
@@ -104,10 +105,11 @@ export class PRDGenerator extends EventEmitter {
 
       // Use docs-only prompt if docsOnly mode is enabled
       if (options.docsOnly && options.contextDocs && options.contextDocs.length > 0) {
-        fullPrompt = this.getDocsOnlyPrompt(contextSection);
+        fullPrompt = this.getDocsOnlyPrompt(contextSection, options.overallDescription);
       } else {
         fullPrompt = basePrompt
           .replace('${PRODUCT_NAME}', options.productName)
+          .replace('${OVERALL_DESCRIPTION}', options.overallDescription || '')
           .replace('${PROBLEM_STATEMENT}', options.problemStatement)
           .replace('${TARGET_AUDIENCE}', options.targetAudience)
           .replace('${KEY_CAPABILITIES}', capabilitiesList)
@@ -291,6 +293,7 @@ export class PRDGenerator extends EventEmitter {
 ## Product Information
 
 - **Product Name**: \${PRODUCT_NAME}
+- **Overall Description**: \${OVERALL_DESCRIPTION}
 - **Problem Statement**: \${PROBLEM_STATEMENT}
 - **Target Audience**: \${TARGET_AUDIENCE}
 - **Key Capabilities**:
@@ -313,7 +316,11 @@ NOTE: Do NOT include timeline, budget, or deadline constraints - not relevant fo
 ===AUDIENCE_END===`;
   }
 
-  private getDocsOnlyPrompt(contextSection: string): string {
+  private getDocsOnlyPrompt(contextSection: string, overallDescription?: string): string {
+    const descriptionSection = overallDescription 
+      ? `\n## Additional Context\n\n**Overall Description**: ${overallDescription}\n`
+      : '';
+    
     return `You are a product requirements document generator for AI-agent-driven development projects.
 
 ## Task
@@ -325,7 +332,7 @@ Analyze the provided documentation and generate comprehensive PRD and Audience d
 - Problem statement (what problem the project solves)
 - Target audience (who will use this)
 - Key capabilities and features
-
+${descriptionSection}
 ${contextSection}
 
 ---

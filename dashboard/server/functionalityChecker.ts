@@ -296,7 +296,6 @@ export class FunctionalityChecker {
         // Check if state variables are used
         for (const [varName, info] of stateVars) {
           let readCount = 0;
-          let setCount = 0;
 
           for (const line of lines) {
             // Count reads (excluding the declaration)
@@ -305,10 +304,6 @@ export class FunctionalityChecker {
             if (!line.includes('useState')) {
               readCount += reads;
             }
-
-            // Count sets
-            const setRegex = new RegExp(`\\b${info.setter}\\b`, 'g');
-            setCount += (line.match(setRegex) || []).length - 1; // -1 for declaration
           }
 
           // State is orphan if never read after declaration
