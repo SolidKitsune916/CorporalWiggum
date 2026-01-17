@@ -21,7 +21,7 @@ interface LoopControlsProps {
 
 export function LoopControls({ loopStatus, onStart, onStop }: LoopControlsProps) {
   const [mode, setMode] = useState<LoopMode>('build');
-  const [maxIterations, setMaxIterations] = useState<string>('20');
+  const [maxIterations, setMaxIterations] = useState<string>('25');
   const [workScope, setWorkScope] = useState('');
 
   const handleStart = () => {
@@ -64,17 +64,29 @@ export function LoopControls({ loopStatus, onStart, onStop }: LoopControlsProps)
           </div>
 
           {/* Max Iterations */}
-          <div className="w-[120px] space-y-2">
+          <div className="w-[140px] space-y-2">
             <Label htmlFor="iterations">Max Iterations</Label>
-            <Input
-              id="iterations"
-              type="number"
-              min="0"
-              placeholder="Unlimited"
+            <Select
               value={maxIterations}
-              onChange={(e) => setMaxIterations(e.target.value)}
+              onValueChange={setMaxIterations}
               disabled={loopStatus.running}
-            />
+            >
+              <SelectTrigger id="iterations">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Unlimited</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="15">15</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="1">1</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Work Scope (only for plan-work mode) */}

@@ -77,28 +77,35 @@ This is the first round of questions. Cover these essential areas:
 
 ## Output Format
 
-Generate 10-25 questions in EXACTLY this format:
+Generate 10-25 questions in EXACTLY this format. For each question, provide a SUGGESTED answer based on the context provided - this helps users by giving them a starting point they can edit:
 
 ===QUESTIONS===
 Q1: What is your preferred technology stack for this project, and are there any constraints I should know about?
 CATEGORY: technical
+SUGGESTED: Based on the project description, a modern web stack like React/TypeScript for the frontend with a Node.js or Python backend would be suitable. No specific constraints mentioned yet.
 
 Q2: Who are the primary users of this system, and what are their main goals?
 CATEGORY: users
+SUGGESTED: The primary users appear to be [infer from context]. Their main goals would likely include [infer from context].
 
 Q3: What are the 3-5 must-have features for the initial release?
 CATEGORY: features
+SUGGESTED: Based on the description, the must-have features for MVP would be: 1) [core feature], 2) [core feature], 3) [core feature].
 
 Q4: Are there any existing systems this needs to integrate with?
 CATEGORY: integration
+SUGGESTED: No specific integrations mentioned yet. Common integrations for this type of project might include authentication providers, payment systems, or third-party APIs.
 
 Q5: What is considered out of scope for the initial version?
 CATEGORY: scope
+SUGGESTED: For the initial version, it would be reasonable to exclude advanced features like [example], focusing instead on core functionality.
 ===END_QUESTIONS===
 
 **Rules**:
 - Each question must end with a question mark
 - Each question must have a CATEGORY line immediately after
+- Each question must have a SUGGESTED line with a reasonable answer based on available context
+- The SUGGESTED answer should be helpful and specific, not generic - use context clues to make educated guesses
 - Use only these categories: technical, users, features, scope, integration, other
 - Number questions sequentially (Q1, Q2, Q3, etc.)
 - Generate between 10-25 questions depending on how much is already known

@@ -28,6 +28,7 @@ import * as ExternalRepos from './externalRepos/index.js';
 import { validateGitHubToken, setGitHubToken } from './externalRepos/mcpConfigManager.js';
 import { RalphDatabase } from './database/index.js';
 import { getSessionRepository } from './database/repositories/SessionRepository.js';
+import { getProjectRepository } from './database/repositories/ProjectRepository.js';
 import { getHealthMonitor } from './healthMonitor.js';
 import { logger } from './lib/logger.js';
 import { metrics, METRICS } from './lib/metrics.js';
@@ -185,6 +186,20 @@ async function startServer() {
         client.send(data);
       }
     });
+  }
+
+  // Helper to get projectId from TARGET_PROJECT_PATH or message payload
+  // Used by external repos handlers that may not receive projectId in payload
+  function getProjectIdFromMessage(message: { payload?: { projectId?: string } }): string | null {
+    // First try payload
+    if (message.payload?.projectId) {
+      return message.payload.projectId;
+    }
+    
+    // Fallback: derive from TARGET_PROJECT_PATH using ProjectRepository
+    const projectRepo = getProjectRepository();
+    const project = projectRepo.getProjectByPath(TARGET_PROJECT_PATH);
+    return project?.id || TARGET_PROJECT_PATH; // Use path as ID if project not registered
   }
 
   // WebSocket connection handler
@@ -1279,7 +1294,10 @@ ${audienceContent}
 
           case 'external-repos:list': {
             try {
-              const { projectId } = message.payload as { projectId: string };
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
               const repos = ExternalRepos.getExternalRepos(projectId);
               ws.send(JSON.stringify({
                 type: 'external-repos:list',
@@ -1296,8 +1314,14 @@ ${audienceContent}
 
           case 'external-repos:add': {
             try {
-              const { projectId, ...repoData } = message.payload as {
-                projectId: string;
+              if (!message.payload) {
+                throw new Error('payload is required');
+              }
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
+              const { url, alias, branch, fetchStrategy, paths, mcpHints, maxTokens, purpose, cacheTTLHours, disableCache } = message.payload as {
                 url: string;
                 alias: string;
                 branch?: string;
@@ -1309,7 +1333,7 @@ ${audienceContent}
                 cacheTTLHours?: number;
                 disableCache?: boolean;
               };
-              const repo = await ExternalRepos.addExternalRepo(projectId, repoData);
+              const repo = await ExternalRepos.addExternalRepo(projectId, { url, alias, branch, fetchStrategy, paths, mcpHints, maxTokens, purpose, cacheTTLHours, disableCache });
               ws.send(JSON.stringify({
                 type: 'external-repos:added',
                 payload: repo,
@@ -1328,11 +1352,20 @@ ${audienceContent}
 
           case 'external-repos:update': {
             try {
-              const { projectId, repoId, ...updates } = message.payload as {
-                projectId: string;
+              if (!message.payload) {
+                throw new Error('payload is required');
+              }
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
+              const { repoId, ...updates } = message.payload as {
                 repoId: string;
                 [key: string]: unknown;
               };
+              if (!repoId) {
+                throw new Error('repoId is required');
+              }
               const repo = ExternalRepos.updateExternalRepo(projectId, repoId, updates);
               ws.send(JSON.stringify({
                 type: 'external-repos:updated',
@@ -1352,7 +1385,17 @@ ${audienceContent}
 
           case 'external-repos:remove': {
             try {
-              const { projectId, repoId } = message.payload as { projectId: string; repoId: string };
+              if (!message.payload) {
+                throw new Error('payload is required');
+              }
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
+              const { repoId } = message.payload as { repoId: string };
+              if (!repoId) {
+                throw new Error('repoId is required');
+              }
               ExternalRepos.removeExternalRepo(projectId, repoId);
               ws.send(JSON.stringify({
                 type: 'external-repos:removed',
@@ -1372,11 +1415,20 @@ ${audienceContent}
 
           case 'external-repos:fetch': {
             try {
-              const { projectId, repoIds, forceRefresh } = message.payload as {
-                projectId: string;
+              if (!message.payload) {
+                throw new Error('payload is required');
+              }
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
+              const { repoIds, forceRefresh } = message.payload as {
                 repoIds: string[];
                 forceRefresh?: boolean;
               };
+              if (!repoIds || repoIds.length === 0) {
+                throw new Error('repoIds is required');
+              }
               const result = await ExternalRepos.fetchAndBuildContext(projectId, repoIds, { forceRefresh });
               ws.send(JSON.stringify({
                 type: 'external-repos:fetched',
@@ -1396,7 +1448,11 @@ ${audienceContent}
 
           case 'external-repos:cache-status': {
             try {
-              const { projectId, repoIds } = message.payload as { projectId: string; repoIds?: string[] };
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
+              const repoIds = message.payload?.repoIds as string[] | undefined;
               const status = ExternalRepos.getReposCacheStatus(projectId, repoIds);
               ws.send(JSON.stringify({
                 type: 'external-repos:cache-status',
@@ -1413,7 +1469,11 @@ ${audienceContent}
 
           case 'external-repos:clear-cache': {
             try {
-              const { projectId, repoIds } = message.payload as { projectId: string; repoIds?: string[] };
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
+              const repoIds = message.payload?.repoIds as string[] | undefined;
               ExternalRepos.clearCache(projectId, repoIds);
               ws.send(JSON.stringify({
                 type: 'external-repos:cache-cleared',
@@ -1430,7 +1490,10 @@ ${audienceContent}
 
           case 'external-repos:mcp-status': {
             try {
-              const { projectId } = message.payload as { projectId: string };
+              const projectId = getProjectIdFromMessage(message);
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
               const status = ExternalRepos.getMcpStatus(projectId);
               ws.send(JSON.stringify({
                 type: 'external-repos:mcp-status',
@@ -1447,7 +1510,13 @@ ${audienceContent}
 
           case 'external-repos:validate-url': {
             try {
+              if (!message.payload) {
+                throw new Error('payload is required');
+              }
               const { url } = message.payload as { url: string };
+              if (!url) {
+                throw new Error('url is required');
+              }
               const result = await ExternalRepos.validateRepoUrl(url);
               ws.send(JSON.stringify({
                 type: 'external-repos:url-validated',
@@ -1464,7 +1533,13 @@ ${audienceContent}
 
           case 'external-repos:validate-token': {
             try {
+              if (!message.payload) {
+                throw new Error('payload is required');
+              }
               const { token } = message.payload as { token: string };
+              if (!token) {
+                throw new Error('token is required');
+              }
               const result = await validateGitHubToken(token);
               ws.send(JSON.stringify({
                 type: 'external-repos:token-validated',
@@ -1481,7 +1556,13 @@ ${audienceContent}
 
           case 'external-repos:set-token': {
             try {
+              if (!message.payload) {
+                throw new Error('payload is required');
+              }
               const { token } = message.payload as { token: string };
+              if (!token) {
+                throw new Error('token is required');
+              }
               // First validate the token
               const validation = await validateGitHubToken(token);
               if (!validation.valid) {

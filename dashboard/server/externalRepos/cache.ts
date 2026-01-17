@@ -15,7 +15,7 @@ import {
   FetchedFile,
   FETCH_LIMITS,
   RepoFetchStrategy,
-} from './types.js';
+} from './types';
 
 const CACHE_DIR = path.join(RalphDatabase.getRalphDir(), 'repo-cache', 'content');
 

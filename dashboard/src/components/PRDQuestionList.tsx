@@ -51,7 +51,16 @@ export function PRDQuestionList({
 }: PRDQuestionListProps) {
   // State is reset via key prop in parent component (IterativePRDGenerator)
   // when roundNumber changes, causing this component to remount with fresh state
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Initialize answers with suggested answers from questions
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    questions.forEach(q => {
+      if (q.suggestedAnswer) {
+        initial[q.id] = q.suggestedAnswer;
+      }
+    });
+    return initial;
+  });
   const [submitted, setSubmitted] = useState(false);
 
   const handleAnswerChange = (questionId: string, value: string) => {

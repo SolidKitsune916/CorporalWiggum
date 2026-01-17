@@ -7,7 +7,7 @@
  */
 
 // Re-export types
-export {
+export type {
   RepoFetchStrategy,
   ExternalRepoReference,
   RepoCacheEntry,
@@ -16,12 +16,17 @@ export {
   FetchedRepoContent,
   GitHubMcpConfig,
   ExtractionProfile,
-  EXTRACTION_PROFILES,
-  FETCH_LIMITS,
   ParsedGitHubUrl,
   GitHubRepoInfo,
   GitHubTokenInfo,
-} from './types.js';
+  McpServerConfig,
+} from './types';
+
+// Re-export values
+export {
+  EXTRACTION_PROFILES,
+  FETCH_LIMITS,
+} from './types';
 
 // Re-export cache functions
 export {
@@ -79,7 +84,7 @@ export {
 // High-level API
 // ============================================================================
 
-import { ExternalRepoReference, FetchedRepoContent, GitHubMcpConfig } from './types.js';
+import { ExternalRepoReference, FetchedRepoContent, GitHubMcpConfig } from './types';
 import { getExternalRepos, getExternalReposByIds, getMcpEnabledRepos } from './manager.js';
 import { fetchMultipleRepos, getGitHubToken } from './fetcher.js';
 import { checkCacheStatus, clearRepoCache, clearAllCache, getCacheStats } from './cache.js';

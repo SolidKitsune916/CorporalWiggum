@@ -123,6 +123,7 @@ export function IterativePRDGenerator({
   const [showExternalRepos, setShowExternalRepos] = useState(false);
   const [selectedPreviousVersions, setSelectedPreviousVersions] = useState<number[]>([]);
   const [showInputForm, setShowInputForm] = useState(false);
+  const [skipQuestions, setSkipQuestions] = useState(false);
 
   // Check for versions on mount
   useEffect(() => {
@@ -188,11 +189,6 @@ export function IterativePRDGenerator({
       skipQuestions,
       selectedExternalRepoIds.length > 0 ? selectedExternalRepoIds : undefined
     );
-  };
-
-  // Handle generating PRD directly (skip questions)
-  const handleGenerateDirectly = () => {
-    handleStartInterview(true);
   };
 
   // Handle starting over - cancel any running process and clear session
@@ -469,37 +465,39 @@ export function IterativePRDGenerator({
             onAnalyze={onAnalyzeCodebase}
           />
 
-          {/* Action buttons - show dual buttons if additional context is provided */}
-          {additionalContext.trim() ? (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handleStartInterview(false)}
-                disabled={(!description.trim() && !additionalContext.trim()) || status.analyzing}
-                className="flex-1"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Ask Questions About This
-              </Button>
-              <Button
-                onClick={handleGenerateDirectly}
-                disabled={(!description.trim() && !additionalContext.trim()) || status.analyzing}
-                className="flex-1"
-              >
+          {/* Skip questions toggle */}
+          <div className="flex items-center gap-2 py-2">
+            <Checkbox
+              id="skip-questions"
+              checked={skipQuestions}
+              onCheckedChange={(checked) => setSkipQuestions(checked === true)}
+            />
+            <label 
+              htmlFor="skip-questions" 
+              className="text-sm cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Skip questions and generate PRD directly
+            </label>
+          </div>
+
+          {/* Action button */}
+          <Button
+            onClick={() => handleStartInterview(skipQuestions)}
+            disabled={(!description.trim() && !additionalContext.trim()) || status.analyzing}
+            className="w-full"
+          >
+            {skipQuestions ? (
+              <>
                 <Sparkles className="w-4 h-4 mr-2" />
                 Generate PRD Directly
-              </Button>
-            </div>
-          ) : (
-            <Button
-              onClick={() => handleStartInterview(false)}
-              disabled={!description.trim() || status.analyzing}
-              className="w-full"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Start Interview
-            </Button>
-          )}
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Start Interview
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 

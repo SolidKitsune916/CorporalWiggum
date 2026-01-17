@@ -350,6 +350,7 @@ Respond in EXACTLY this format:
       const claudeArgs = [
         '-p',
         '--output-format=stream-json',
+        '--verbose',
         '--dangerously-skip-permissions'
       ];
 

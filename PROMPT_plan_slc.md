@@ -17,3 +17,5 @@ When deriving test requirements from acceptance criteria, identify whether verif
 IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Treat `src/lib` as the project's standard library for shared utilities and components. Prefer consolidated, idiomatic implementations there over ad-hoc copies.
 
 ULTIMATE GOAL: We want to achieve the most valuable next release for the audience in @AUDIENCE_JTBD.md. Consider missing elements and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md. If you create a new element then document the plan to implement it in @IMPLEMENTATION_PLAN.md using a subagent.
+
+After creating/updating @IMPLEMENTATION_PLAN.md, if the plan is complete and no further refinement is needed, output "PLANNING_COMPLETE" on a line by itself. This signals that planning is done and the loop can exit early.

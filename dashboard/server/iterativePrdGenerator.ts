@@ -610,7 +610,7 @@ ${analysis.suggestedFocus.map(f => `- ${f}`).join('\n')}
 
       const isWindows = process.platform === 'win32';
       if (isWindows || process.env.CLAUDE_MODEL_FLAG === 'true') {
-        claudeArgs.push('--model', 'opus');
+        claudeArgs.push('--model', 'sonnet');
       }
 
       // Check if MCP is needed for external repos
@@ -732,6 +732,7 @@ ${analysis.suggestedFocus.map(f => `- ${f}`).join('\n')}
       for (const line of lines) {
         const questionMatch = line.match(/^Q(\d+):\s*(.+)$/);
         const categoryMatch = line.match(/^CATEGORY:\s*(.+)$/i);
+        const suggestedMatch = line.match(/^SUGGESTED:\s*(.+)$/i);
 
         if (questionMatch) {
           if (currentQuestion && currentQuestion.text) {
@@ -747,6 +748,8 @@ ${analysis.suggestedFocus.map(f => `- ${f}`).join('\n')}
           if (['technical', 'users', 'features', 'scope', 'integration', 'other'].includes(cat)) {
             currentQuestion.category = cat as PRDQuestion['category'];
           }
+        } else if (suggestedMatch && currentQuestion) {
+          currentQuestion.suggestedAnswer = suggestedMatch[1].trim();
         }
       }
 
@@ -805,7 +808,7 @@ ${analysis.suggestedFocus.map(f => `- ${f}`).join('\n')}
 
 ## Task
 
-Generate 10-25 clarifying questions to better understand the product requirements. 
+Generate 10-25 clarifying questions to better understand the product requirements. For each question, provide a SUGGESTED answer based on the context - this gives users a starting point they can edit.
 
 ${roundInstructions}
 
@@ -816,15 +819,19 @@ Respond in EXACTLY this format:
 ===QUESTIONS===
 Q1: [Your question here]
 CATEGORY: technical
+SUGGESTED: [Your best guess answer based on context]
 
 Q2: [Your question here]
 CATEGORY: users
+SUGGESTED: [Your best guess answer based on context]
 
 Q3: [Your question here]
 CATEGORY: features
+SUGGESTED: [Your best guess answer based on context]
 ===END_QUESTIONS===
 
 Use categories: technical, users, features, scope, integration, other
+Each question MUST have a SUGGESTED line with a helpful, context-aware answer.
 `;
   }
 

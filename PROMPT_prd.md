@@ -1,20 +1,21 @@
-You are a product requirements document generator for AI-agent-driven development projects. Generate two complete, production-ready markdown documents based on the provided product information.
+You are a product requirements document generator for AI-agent-driven development projects. Generate two complete, production-ready markdown documents based on the provided context.
 
-## Product Information
+${CONTEXT}
 
-- **Product Name**: ${PRODUCT_NAME}
-- **Overall Description**: ${OVERALL_DESCRIPTION}
-- **Problem Statement**: ${PROBLEM_STATEMENT}
-- **Target Audience**: ${TARGET_AUDIENCE}
-- **Key Capabilities**:
-${KEY_CAPABILITIES}
-${CONTEXT_DOCS}
+${QA_CONTEXT}
 
 ---
 
 ## Instructions
 
-Generate two complete markdown documents following the EXACT structure specified below. Fill in ALL sections thoughtfully based on the product information provided. Do NOT leave placeholder brackets like [text] - generate actual, specific content for everything.
+Generate two complete markdown documents following the EXACT structure specified below. Fill in ALL sections thoughtfully based on the product information provided above. Do NOT leave placeholder brackets like [text] - generate actual, specific content for everything.
+
+Use the context provided above to understand:
+- What the product is and does
+- The problem it solves
+- Who it's for
+- Key features and capabilities
+- Any technical details from codebase analysis
 
 IMPORTANT: Do NOT include timeline, budget, or deadline constraints anywhere. These are not relevant for AI agent implementation.
 
@@ -22,9 +23,9 @@ IMPORTANT: Do NOT include timeline, budget, or deadline constraints anywhere. Th
 
 ### DOCUMENT 1: PRD.md
 
-Generate a comprehensive PRD with the following structure. Use the overall description and problem statement to inform all sections:
+Generate a comprehensive PRD with the following structure:
 
-# **${PRODUCT_NAME}**
+# **[Product Name from Context]**
 
 ## **Product Requirements Document for AI Development**
 
@@ -32,7 +33,7 @@ Generate a comprehensive PRD with the following structure. Use the overall descr
 
 | Field | Value |
 | ----- | ----- |
-| **Version** | 1.0 |
+| **Version** | ${VERSION} |
 | **Date** | [Current Date] |
 | **Status** | Draft |
 
@@ -57,11 +58,11 @@ Generate a comprehensive PRD with the following structure. Use the overall descr
 
 ### **1.1 Purpose**
 
-[Generate based on overall description and problem statement - what the system does and the problem it solves]
+[Generate based on the product description and context - what the system does and the problem it solves]
 
 ### **1.2 Scope**
 
-[Define what is included and excluded from this PRD based on the key capabilities]
+[Define what is included and excluded from this PRD based on the provided context]
 
 ### **1.3 Key Features Summary**
 
@@ -85,13 +86,13 @@ Generate a comprehensive PRD with the following structure. Use the overall descr
 
 | Technology | Version | Purpose |
 | ---------- | ------- | ------- |
-[Suggest appropriate frontend technologies based on the product type]
+[Use codebase analysis if available, otherwise suggest appropriate frontend technologies based on the product type]
 
 #### **Backend**
 
 | Technology | Version | Purpose |
 | ---------- | ------- | ------- |
-[Suggest appropriate backend technologies based on the product type]
+[Use codebase analysis if available, otherwise suggest appropriate backend technologies based on the product type]
 
 #### **Infrastructure**
 
@@ -476,13 +477,13 @@ Generate an audience analysis with the following structure:
 
 ## Primary Audience
 
-[Expand on the target audience provided - who they are, their context, their needs. Use the overall description to provide deeper context]
+[Use the product description and any Q&A context to identify and describe the primary audience - who they are, their context, their needs]
 
 ### Jobs to Be Done
 
 For [audience name]:
 
-[Generate 3-5 JTBDs based on the problem and capabilities]
+[Generate 3-5 JTBDs based on the problem and capabilities described in the context]
 
 1. **[JTBD Name]**
    - **Outcome**: [What success looks like]
@@ -502,7 +503,7 @@ For [audience name]:
 
 ## User Personas
 
-[Generate 2-3 detailed user personas based on the target audience]
+[Generate 2-3 detailed user personas based on the context provided]
 
 ### Persona 1: [Name]
 

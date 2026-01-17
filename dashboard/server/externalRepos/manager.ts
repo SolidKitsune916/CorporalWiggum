@@ -7,7 +7,7 @@
 
 import { randomUUID } from 'crypto';
 import { getProjectRepository } from '../database/repositories/ProjectRepository.js';
-import { ExternalRepoReference, RepoFetchStrategy } from './types.js';
+import { ExternalRepoReference, RepoFetchStrategy } from './types';
 import { parseGitHubUrl, getDefaultBranch } from './fetcher.js';
 
 const SETTINGS_KEY = 'externalRepos';

@@ -13,7 +13,9 @@ import {
   CheckCircle,
   Layers,
   Target,
+  Copy,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CodebaseAnalysisCardProps {
   analysis: CodebaseAnalysis | null;
@@ -26,6 +28,41 @@ export function CodebaseAnalysisCard({
   isAnalyzing,
   onAnalyze,
 }: CodebaseAnalysisCardProps) {
+  // Format analysis as text for copying
+  const formatAnalysisForCopy = () => {
+    if (!analysis) return '';
+    
+    let text = `## Existing Codebase Overview\n\n`;
+    text += `**Tech Stack:** ${analysis.techStack.join(', ')}\n`;
+    text += `**Files:** ${analysis.fileCount} | **Tests:** ${analysis.hasTests ? 'Yes' : 'No'} | **API:** ${analysis.hasApi ? 'Yes' : 'No'}\n\n`;
+    text += `### Summary\n${analysis.summary}\n\n`;
+    
+    if (analysis.keyComponents.length > 0) {
+      text += `### Key Components\n`;
+      analysis.keyComponents.forEach(c => { text += `- ${c}\n`; });
+      text += '\n';
+    }
+    
+    if (analysis.architectureNotes) {
+      text += `### Architecture\n${analysis.architectureNotes}\n\n`;
+    }
+    
+    if (analysis.suggestedFocus.length > 0) {
+      text += `### Suggested Focus Areas\n`;
+      analysis.suggestedFocus.forEach(f => { text += `- ${f}\n`; });
+    }
+    
+    return text.trim();
+  };
+
+  const handleCopyForPRD = () => {
+    const text = formatAnalysisForCopy();
+    navigator.clipboard.writeText(text);
+    toast.success('Analysis copied!', {
+      description: 'Paste it into your PRD description',
+    });
+  };
+
   // Loading state
   if (isAnalyzing) {
     return (
@@ -90,15 +127,27 @@ export function CodebaseAnalysisCard({
             <CheckCircle className="w-4 h-4 text-green-500" />
             <CardTitle className="text-sm font-medium">Codebase Analysis</CardTitle>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onAnalyze}
-            className="h-6 px-2 text-xs"
-          >
-            <RefreshCw className="w-3 h-3 mr-1" />
-            Re-analyze
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyForPRD}
+              className="h-6 px-2 text-xs"
+              title="Copy analysis to clipboard for PRD"
+            >
+              <Copy className="w-3 h-3 mr-1" />
+              Copy for PRD
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onAnalyze}
+              className="h-6 px-2 text-xs"
+            >
+              <RefreshCw className="w-3 h-3 mr-1" />
+              Re-analyze
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

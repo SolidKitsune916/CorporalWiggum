@@ -5,7 +5,7 @@
  * Formats content as XML blocks for inclusion in Claude prompts.
  */
 
-import { FetchedRepoContent, ExternalRepoReference } from './types.js';
+import { FetchedRepoContent, ExternalRepoReference } from './types';
 
 /**
  * Build context XML from fetched repository content

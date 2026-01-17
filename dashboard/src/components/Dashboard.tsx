@@ -586,16 +586,28 @@ export function Dashboard({ backendPort }: DashboardProps) {
                   onInsertPRD={(prd, audience) => {
                     // Get version number from complete result or default to unversioned
                     const version = prdInterviewComplete?.version.version;
-                    const prdFilename = version ? `PRD_v${version}.md` : 'PRD.md';
-                    const audienceFilename = version ? `AUDIENCE_JTBD_v${version}.md` : 'AUDIENCE_JTBD.md';
+                    
+                    // Always write to base files (PRD.md, AUDIENCE_JTBD.md) - these are the "active" versions
                     sendCommand({
                       type: 'config:write',
-                      payload: { file: prdFilename, content: prd },
+                      payload: { file: 'PRD.md', content: prd },
                     });
                     sendCommand({
                       type: 'config:write',
-                      payload: { file: audienceFilename, content: audience },
+                      payload: { file: 'AUDIENCE_JTBD.md', content: audience },
                     });
+                    
+                    // Also write to versioned files for history tracking
+                    if (version) {
+                      sendCommand({
+                        type: 'config:write',
+                        payload: { file: `PRD_v${version}.md`, content: prd },
+                      });
+                      sendCommand({
+                        type: 'config:write',
+                        payload: { file: `AUDIENCE_JTBD_v${version}.md`, content: audience },
+                      });
+                    }
                   }}
                 />
               </TabsContent>

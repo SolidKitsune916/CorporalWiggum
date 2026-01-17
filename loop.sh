@@ -343,6 +343,25 @@ count_incomplete_tasks() {
     fi
 }
 
+# Calculate file hash (cross-platform: md5sum on Linux, md5 on macOS)
+calculate_file_hash() {
+    local file="$1"
+    if [ ! -f "$file" ]; then
+        echo ""
+        return
+    fi
+    
+    # Try md5sum first (Linux)
+    if command -v md5sum &> /dev/null; then
+        md5sum "$file" | cut -d' ' -f1
+    # Fallback to md5 (macOS)
+    elif command -v md5 &> /dev/null; then
+        md5 -q "$file"
+    else
+        echo ""
+    fi
+}
+
 # Check if truly all tasks are complete
 all_tasks_complete() {
     local incomplete
@@ -636,6 +655,59 @@ while true; do
     if [ "$MODE" = "validate" ]; then
         ITERATION=$((ITERATION + 1))
         echo -e "\n\n======================== VALIDATE ITERATION $ITERATION ========================\n"
+        continue
+    fi
+
+    # Planning modes: check for early exit conditions
+    if [ "$MODE" = "plan" ] || [ "$MODE" = "plan-slc" ] || [ "$MODE" = "plan-work" ]; then
+        PLANNING_COMPLETE=false
+        
+        # Check if Claude signaled planning complete
+        if grep -q "PLANNING_COMPLETE" "$OUTPUT_LOG" 2>/dev/null; then
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Planning complete signal detected"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            PLANNING_COMPLETE=true
+        fi
+        
+        # Check if plan file exists and hasn't changed (stability check)
+        if [ -f "IMPLEMENTATION_PLAN.md" ]; then
+            CURRENT_HASH=$(calculate_file_hash "IMPLEMENTATION_PLAN.md")
+            PLAN_HASH_FILE=".last_plan_hash"
+            
+            if [ -n "$CURRENT_HASH" ]; then
+                if [ -f "$PLAN_HASH_FILE" ]; then
+                    LAST_HASH=$(cat "$PLAN_HASH_FILE" 2>/dev/null || echo "")
+                    if [ "$CURRENT_HASH" = "$LAST_HASH" ] && [ -n "$LAST_HASH" ]; then
+                        if [ "$PLANNING_COMPLETE" = "false" ]; then
+                            echo ""
+                            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                            echo "✅ Plan unchanged - planning appears stable"
+                            echo "   Plan file hash matches previous iteration"
+                            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                        fi
+                        PLANNING_COMPLETE=true
+                    fi
+                fi
+                # Save current hash for next iteration
+                echo "$CURRENT_HASH" > "$PLAN_HASH_FILE"
+            fi
+        fi
+        
+        # Exit early if planning is complete
+        if [ "$PLANNING_COMPLETE" = "true" ]; then
+            # Push final changes to remote
+            CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+            if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+                git push origin "$CURRENT_BRANCH" 2>/dev/null || git push -u origin "$CURRENT_BRANCH" 2>/dev/null || true
+            fi
+            break
+        fi
+        
+        # Continue to next iteration for planning refinement
+        ITERATION=$((ITERATION + 1))
+        echo -e "\n\n======================== PLANNING ITERATION $ITERATION ========================\n"
         continue
     fi
 

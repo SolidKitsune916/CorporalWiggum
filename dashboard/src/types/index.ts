@@ -1495,6 +1495,7 @@ export interface PRDQuestion {
   text: string;
   category?: PRDQuestionCategory;
   answer?: string;
+  suggestedAnswer?: string;  // AI-suggested answer to pre-fill
   skipped: boolean;
 }
 

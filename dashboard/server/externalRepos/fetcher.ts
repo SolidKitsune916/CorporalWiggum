@@ -22,7 +22,7 @@ import {
   ExtractionProfile,
   EXTRACTION_PROFILES,
   FETCH_LIMITS,
-} from './types.js';
+} from './types';
 import {
   getCachedContent,
   setCachedContent,

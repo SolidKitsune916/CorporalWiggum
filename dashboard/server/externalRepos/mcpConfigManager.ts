@@ -8,7 +8,7 @@
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { ExternalRepoReference, GitHubTokenInfo, McpServerConfig } from './types.js';
+import { ExternalRepoReference, GitHubTokenInfo, McpServerConfig } from './types';
 import { parseGitHubUrl } from './fetcher.js';
 import { getPreferencesRepository } from '../database/repositories/PreferencesRepository.js';
 

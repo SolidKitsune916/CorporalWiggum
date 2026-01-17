@@ -128,7 +128,7 @@ export class PRDGenerator extends EventEmitter {
       // macOS may have older CLI versions that don't support this flag
       const isWindows = process.platform === 'win32';
       if (isWindows || process.env.CLAUDE_MODEL_FLAG === 'true') {
-        claudeArgs.push('--model', 'opus');
+        claudeArgs.push('--model', 'sonnet');
       }
 
       // Log command details for debugging
