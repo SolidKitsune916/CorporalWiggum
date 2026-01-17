@@ -34,6 +34,12 @@ export interface LoopControllerOptions {
   completionPromise?: string;
 }
 
+export interface LoopValidationResult {
+  valid: boolean;
+  error?: string;
+  suggestion?: string;
+}
+
 export class LoopController extends EventEmitter {
   private projectPath: string; // Target project to run in
   private ralphPath: string; // RalphWiggumV2 directory (for loop.sh)
@@ -103,9 +109,49 @@ export class LoopController extends EventEmitter {
     this.emit('status', this.status);
   }
 
+  /**
+   * Validate project configuration before starting a loop
+   * Checks for AGENTS.md and required sections
+   */
+  validateProjectForLoop(): LoopValidationResult {
+    const agentsPath = path.join(this.projectPath, 'AGENTS.md');
+
+    // Check if AGENTS.md exists
+    if (!fs.existsSync(agentsPath)) {
+      return {
+        valid: false,
+        error: 'AGENTS.md not found',
+        suggestion: 'Create AGENTS.md with build and validation commands',
+      };
+    }
+
+    // Check for ## Validation section
+    const content = fs.readFileSync(agentsPath, 'utf-8');
+    if (!content.includes('## Validation')) {
+      return {
+        valid: false,
+        error: 'AGENTS.md missing ## Validation section',
+        suggestion: 'Add a "## Validation" section with typecheck/lint commands',
+      };
+    }
+
+    return { valid: true };
+  }
+
   start(options: { mode: LoopMode; maxIterations?: number; workScope?: string } & LoopControllerOptions) {
     if (this.process) {
       this.emitLog('Loop already running', 'warning');
+      return;
+    }
+
+    // Validate project configuration before starting
+    const validation = this.validateProjectForLoop();
+    if (!validation.valid) {
+      this.emitLog(`Error: ${validation.error}`, 'error');
+      if (validation.suggestion) {
+        this.emitLog(`Suggestion: ${validation.suggestion}`, 'info');
+      }
+      this.emit('error', validation.error);
       return;
     }
 
@@ -269,7 +315,24 @@ export class LoopController extends EventEmitter {
     this.process.stderr?.on('data', (data) => {
       const lines = data.toString().split('\n').filter((l: string) => l.trim());
       lines.forEach((line: string) => {
-        this.emitLog(line, 'error');
+        // Claude CLI outputs streaming JSON to stderr - these are not errors
+        // Check if line is JSON streaming output from Claude
+        const isClaudeStreamingJson = line.startsWith('{') && (
+          line.includes('"type":"assistant"') ||
+          line.includes('"type":"user"') ||
+          line.includes('"type":"system"') ||
+          line.includes('"type":"text"') ||
+          line.includes('"type":"content_block') ||
+          line.includes('"type":"message')
+        );
+
+        if (isClaudeStreamingJson) {
+          // This is normal Claude CLI streaming output, not an error
+          this.emitLog(line, 'info');
+        } else {
+          // This is an actual error
+          this.emitLog(line, 'error');
+        }
       });
     });
 

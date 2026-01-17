@@ -279,6 +279,27 @@ export class FileWatcher extends EventEmitter {
             content: emojiMatch[2].trim(),
             completed: emojiMatch[1] === '✅',
           });
+          return;
+        }
+
+        // Pattern 5: Task headers - ### Task X.X: Title or ## Task X.X: Title
+        // Check for completion markers like COMPLETE, DONE, or checkmark emoji
+        const taskHeaderMatch = line.match(/^#{2,3}\s*Task\s+(\d+\.\d+):\s*(.+)$/i);
+        if (taskHeaderMatch) {
+          const taskId = taskHeaderMatch[1];
+          const title = taskHeaderMatch[2].trim();
+
+          // Look ahead for completion indicators in the next few lines
+          // or check if title contains completion markers
+          const lookahead = lines.slice(index, index + 5).join(' ');
+          const isComplete =
+            /COMPLETE|DONE|✅/i.test(title) || /COMPLETE|DONE|✅/i.test(lookahead);
+
+          tasks.push({
+            id: `task-${taskId}`,
+            content: `Task ${taskId}: ${title}`,
+            completed: isComplete,
+          });
         }
       });
 

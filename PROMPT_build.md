@@ -88,11 +88,25 @@ Use these criteria when running perceptual quality reviews on UI implementations
 
 999999999999999. IMPORTANT: Keep @AGENTS.md operational only — status updates and progress notes belong in `IMPLEMENTATION_PLAN.md`. A bloated AGENTS.md pollutes every future loop's context.
 
-9999999999999999. Use checkbox format for tasks in @IMPLEMENTATION_PLAN.md:
-- [x] US-001: Completed task
+9999999999999999. **CRITICAL: Task Format Requirements for @IMPLEMENTATION_PLAN.md**
+
+Use checkbox format for ALL tasks. The loop tracks progress by counting `- [x]` checkboxes:
+
+```markdown
+- [x] Task 1.1: Completed task description
+- [ ] Task 1.2: Pending task description  
+- [x] US-001: Another completed task
 - [ ] US-002: Pending task (mark in progress in tasks.json)
-- [ ] US-003: Pending task
-This makes progress visually clear for humans reviewing the file.
+```
+
+**DO NOT** use only headers like `### Task 1.1:` without a checkbox line - the loop cannot track completion.
+**DO** include a checkbox line (`- [x]` or `- [ ]`) for every task you want tracked.
+
+When marking tasks complete:
+1. Change `- [ ]` to `- [x]` 
+2. Or add `COMPLETE` or `DONE` after a `### Task X.X:` header
+
+This makes progress visually clear for humans AND enables the loop script to track completion accurately.
 
 99999999999999999. Keep `tasks.json` in sync with @IMPLEMENTATION_PLAN.md. Format:
 ```json

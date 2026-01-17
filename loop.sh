@@ -242,6 +242,70 @@ check_agents_config() {
     return 0
 }
 
+# Check git remote connectivity before starting loop
+check_git_remote() {
+    local remote_url
+    remote_url=$(git remote get-url origin 2>/dev/null)
+    
+    if [ -z "$remote_url" ]; then
+        echo "⚠️  WARNING: No git remote 'origin' configured"
+        echo "   Changes will be committed locally but NOT pushed"
+        echo "   To fix: git remote add origin <your-repo-url>"
+        echo ""
+        read -p "Continue without remote? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Exiting. Configure git remote first."
+            exit 1
+        fi
+        return 1
+    fi
+    
+    # Test connectivity (timeout after 5 seconds)
+    if ! timeout 5 git ls-remote --exit-code origin HEAD &>/dev/null 2>&1; then
+        echo "⚠️  WARNING: Cannot connect to git remote"
+        echo "   URL: $remote_url"
+        echo "   Changes will be committed locally but push may fail"
+        echo ""
+        read -p "Continue anyway? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Exiting. Check network or remote configuration."
+            exit 1
+        fi
+        return 1
+    fi
+    
+    echo "✓ Git remote: $remote_url"
+    return 0
+}
+
+# Check IMPLEMENTATION_PLAN.md format and warn about potential issues
+check_plan_format() {
+    local plan_file="IMPLEMENTATION_PLAN.md"
+    if [ ! -f "$plan_file" ]; then
+        return 0
+    fi
+    
+    local checkbox_tasks task_headers
+    checkbox_tasks=$(grep -cE "^\s*-\s*\[[ xX]\]" "$plan_file" 2>/dev/null || echo 0)
+    task_headers=$(grep -cE "^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:" "$plan_file" 2>/dev/null || echo 0)
+    
+    if [ "$task_headers" -gt 0 ] && [ "$checkbox_tasks" -eq 0 ]; then
+        echo "⚠️  WARNING: IMPLEMENTATION_PLAN.md uses Task headers without checkboxes"
+        echo "   Found $task_headers task headers but no checkbox items"
+        echo "   Task headers will be tracked, but recommended format is:"
+        echo "   - [x] Task 1.1: Completed task"
+        echo "   - [ ] Task 1.2: Pending task"
+        echo ""
+    elif [ "$task_headers" -gt 0 ]; then
+        echo "✓ Found $task_headers task headers and $checkbox_tasks checkbox items"
+    elif [ "$checkbox_tasks" -gt 0 ]; then
+        echo "✓ Found $checkbox_tasks checkbox items"
+    fi
+    return 0
+}
+
 # Parse last iteration's output for error patterns
 check_iteration_health() {
     local log_file="${1:-ralph.log}"
@@ -306,15 +370,18 @@ count_completed_tasks() {
         # grep -c returns 1 when no matches, so default to 0 if empty
         echo "${count:-0}"
     else
-        # Advanced mode: count checked boxes in IMPLEMENTATION_PLAN.md
+        # Advanced mode: count in IMPLEMENTATION_PLAN.md
         local plan_file="IMPLEMENTATION_PLAN.md"
         if [ ! -f "$plan_file" ]; then
             echo 0
             return
         fi
-        local count
-        count=$(grep -cE "^\s*-\s*\[x\]|^\s*-\s*\[X\]" "$plan_file" 2>/dev/null)
-        echo "${count:-0}"
+        local checkbox_count task_header_count
+        # Count checked checkboxes
+        checkbox_count=$(grep -cE "^\s*-\s*\[x\]|^\s*-\s*\[X\]" "$plan_file" 2>/dev/null || echo 0)
+        # Count task headers marked complete (COMPLETE, DONE, or ✅ in same line)
+        task_header_count=$(grep -ciE "^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:.*COMPLETE|^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:.*DONE|^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:.*✅" "$plan_file" 2>/dev/null || echo 0)
+        echo $((checkbox_count + task_header_count))
     fi
 }
 
@@ -331,15 +398,21 @@ count_incomplete_tasks() {
         # grep -c returns 1 when no matches, so default to 0 if empty
         echo "${count:-0}"
     else
-        # Advanced mode: count unchecked boxes in IMPLEMENTATION_PLAN.md
+        # Advanced mode: count in IMPLEMENTATION_PLAN.md
         local plan_file="IMPLEMENTATION_PLAN.md"
         if [ ! -f "$plan_file" ]; then
             echo 0
             return
         fi
-        local count
-        count=$(grep -cE "^\s*-\s*\[ \]" "$plan_file" 2>/dev/null)
-        echo "${count:-0}"
+        local checkbox_count task_header_count
+        # Count unchecked checkboxes
+        checkbox_count=$(grep -cE "^\s*-\s*\[ \]" "$plan_file" 2>/dev/null || echo 0)
+        # Count task headers NOT marked complete (no COMPLETE, DONE, or ✅)
+        task_header_count=$(grep -cE "^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:" "$plan_file" 2>/dev/null || echo 0)
+        # Subtract completed task headers from total
+        completed_headers=$(grep -ciE "^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:.*COMPLETE|^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:.*DONE|^#{2,3}\s*Task\s+[0-9]+\.[0-9]+:.*✅" "$plan_file" 2>/dev/null || echo 0)
+        incomplete_headers=$((task_header_count - completed_headers))
+        echo $((checkbox_count + incomplete_headers))
     fi
 }
 
@@ -486,6 +559,8 @@ check_functionality() {
 echo ""
 echo "Running pre-flight checks..."
 check_agents_config
+check_git_remote
+check_plan_format
 LAST_TASK_COUNT=$(count_completed_tasks)
 REMAINING_TASKS=$(count_incomplete_tasks)
 echo "✓ Starting with $LAST_TASK_COUNT completed tasks, $REMAINING_TASKS remaining"
