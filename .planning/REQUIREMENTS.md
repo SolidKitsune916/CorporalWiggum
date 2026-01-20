@@ -42,10 +42,10 @@ Requirements for this release. Each maps to roadmap phases.
 
 ### Sub-agent Observability
 
-- [ ] **OBSV-01**: Track number of sub-agents spawned per iteration
-- [ ] **OBSV-02**: Display sub-agent count and estimated cost in telemetry panel
-- [ ] **OBSV-03**: Alert/warning when sub-agent spawning exceeds configurable threshold
-- [ ] **OBSV-04**: Session summary shows total sub-agents spawned across all iterations
+- [x] **OBSV-01**: Track number of sub-agents spawned per iteration
+- [x] **OBSV-02**: Display sub-agent count and estimated cost in telemetry panel
+- [x] **OBSV-03**: Alert/warning when sub-agent spawning exceeds configurable threshold
+- [x] **OBSV-04**: Session summary shows total sub-agents spawned across all iterations
 
 ### Scriptability
 
@@ -104,10 +104,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-02 | Phase 2 | Complete |
 | DASH-03 | Phase 2 | Complete |
 | DASH-04 | Phase 2 | Complete |
-| OBSV-01 | Phase 5 | Pending |
-| OBSV-02 | Phase 5 | Pending |
-| OBSV-03 | Phase 5 | Pending |
-| OBSV-04 | Phase 5 | Pending |
+| OBSV-01 | Phase 5 | Complete |
+| OBSV-02 | Phase 5 | Complete |
+| OBSV-03 | Phase 5 | Complete |
+| OBSV-04 | Phase 5 | Complete |
 | SCRP-01 | Phase 6 | Pending |
 | SCRP-02 | Phase 6 | Pending |
 | SCRP-03 | Phase 6 | Pending |

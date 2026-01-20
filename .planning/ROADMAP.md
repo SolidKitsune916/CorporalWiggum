@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Dashboard Reliability** - Fix existing start/stop/task list/navigation issues
 - [x] **Phase 3: CLI Core** - Terminal interface for loop control
 - [x] **Phase 4: Launcher Hub** - Multi-project dashboard view
-- [ ] **Phase 5: Sub-agent Observability** - Track and display sub-agent spawning
+- [x] **Phase 5: Sub-agent Observability** - Track and display sub-agent spawning
 - [ ] **Phase 6: Scriptability** - Exit codes, JSON output, auto-stop, webhooks
 
 ## Phase Details
@@ -103,9 +103,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Sub-agent parsing and database tracking (OBSV-01)
-- [ ] 05-02-PLAN.md — Telemetry panel and WebSocket integration (OBSV-02)
-- [ ] 05-03-PLAN.md — Threshold alerts and session summary (OBSV-03, OBSV-04)
+- [x] 05-01-PLAN.md — Sub-agent parsing and database tracking (OBSV-01)
+- [x] 05-02-PLAN.md — Telemetry panel and WebSocket integration (OBSV-02)
+- [x] 05-03-PLAN.md — Threshold alerts and session summary (OBSV-03, OBSV-04)
 
 ### Phase 6: Scriptability
 **Goal**: CLI supports scripting workflows with proper exit codes and machine output
@@ -135,7 +135,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 | 2. Dashboard Reliability | 4/4 | Complete | 2026-01-20 |
 | 3. CLI Core | 3/3 | Complete | 2026-01-20 |
 | 4. Launcher Hub | 3/3 | Complete | 2026-01-20 |
-| 5. Sub-agent Observability | 0/3 | Planned | - |
+| 5. Sub-agent Observability | 3/3 | Complete | 2026-01-20 |
 | 6. Scriptability | 0/3 | Not started | - |
 
 ---
