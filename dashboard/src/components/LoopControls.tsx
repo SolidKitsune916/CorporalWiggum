@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { LoopStatus, LoopMode } from '@/types';
-import { Play, Square, Settings2 } from 'lucide-react';
+import { Play, Square, Settings2, Loader2 } from 'lucide-react';
 
 interface LoopControlsProps {
   loopStatus: LoopStatus;
@@ -23,6 +23,12 @@ export function LoopControls({ loopStatus, onStart, onStop }: LoopControlsProps)
   const [mode, setMode] = useState<LoopMode>('build');
   const [maxIterations, setMaxIterations] = useState<string>('25');
   const [workScope, setWorkScope] = useState('');
+
+  // Derive state variables for UI
+  const isStarting = loopStatus.running && loopStatus.starting;
+  const isStopping = loopStatus.stopping;
+  const isRunning = loopStatus.running && !loopStatus.starting && !isStopping;
+  const isIdle = !loopStatus.running && !loopStatus.stopping;
 
   const handleStart = () => {
     const iterations = maxIterations ? parseInt(maxIterations, 10) : undefined;
@@ -49,7 +55,7 @@ export function LoopControls({ loopStatus, onStart, onStop }: LoopControlsProps)
             <Select
               value={mode}
               onValueChange={(v) => setMode(v as LoopMode)}
-              disabled={loopStatus.running}
+              disabled={!isIdle}
             >
               <SelectTrigger id="mode">
                 <SelectValue />
@@ -69,7 +75,7 @@ export function LoopControls({ loopStatus, onStart, onStop }: LoopControlsProps)
             <Select
               value={maxIterations}
               onValueChange={setMaxIterations}
-              disabled={loopStatus.running}
+              disabled={!isIdle}
             >
               <SelectTrigger id="iterations">
                 <SelectValue />
@@ -98,22 +104,35 @@ export function LoopControls({ loopStatus, onStart, onStop }: LoopControlsProps)
                 placeholder="e.g., user authentication system"
                 value={workScope}
                 onChange={(e) => setWorkScope(e.target.value)}
-                disabled={loopStatus.running}
+                disabled={!isIdle}
               />
             </div>
           )}
 
           {/* Action Buttons */}
           <div className="flex gap-2">
-            {loopStatus.running ? (
+            {isIdle && (
+              <Button onClick={handleStart} className="gap-2">
+                <Play className="h-4 w-4" />
+                Start {mode === 'build' ? 'Build' : mode === 'plan' ? 'Planning' : mode === 'plan-slc' ? 'SLC Planning' : 'Work Planning'}
+              </Button>
+            )}
+            {isStarting && (
+              <Button disabled className="gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Starting...
+              </Button>
+            )}
+            {isRunning && (
               <Button variant="destructive" onClick={onStop} className="gap-2">
                 <Square className="h-4 w-4" />
                 Stop Loop
               </Button>
-            ) : (
-              <Button onClick={handleStart} className="gap-2">
-                <Play className="h-4 w-4" />
-                Start {mode === 'build' ? 'Build' : mode === 'plan' ? 'Planning' : mode === 'plan-slc' ? 'SLC Planning' : 'Work Planning'}
+            )}
+            {isStopping && (
+              <Button variant="destructive" disabled className="gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Stopping...
               </Button>
             )}
           </div>
