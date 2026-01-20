@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- context pattern requires exporting hook alongside provider */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
 interface AccessibilityContextValue {

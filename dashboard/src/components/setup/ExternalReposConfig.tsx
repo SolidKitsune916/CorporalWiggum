@@ -142,6 +142,7 @@ export function ExternalReposConfig({
         payload: { projectId, repoIds: externalRepos.map(r => r.id) },
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only re-fetch when repo count changes
   }, [projectId, externalRepos.length, sendCommand]);
 
   const validateUrl = useCallback(() => {

@@ -66,6 +66,7 @@ export function LauncherHome() {
   // Handle side effects when init completes: clear initializing state and auto-hide message
   useEffect(() => {
     if (lastInitResult && lastInitResult.created.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: respond to external result
       setInitializingProjectId(null);
       setShowSuccess(true);
       // Auto-hide after 5 seconds

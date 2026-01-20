@@ -222,7 +222,8 @@ class WebhookManager {
    * Export webhooks config
    */
   exportWebhooks(): Array<Omit<WebhookConfig, 'createdAt'>> {
-    return Array.from(this.webhooks.values()).map(({ createdAt: _, ...rest }) => rest);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructuring to omit createdAt
+    return Array.from(this.webhooks.values()).map(({ createdAt: _createdAt, ...rest }) => rest);
   }
 
   /**

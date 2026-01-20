@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- companion hook pattern for stateful UI */
 import { useState, useEffect } from 'react';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';

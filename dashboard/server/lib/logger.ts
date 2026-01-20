@@ -117,6 +117,7 @@ class Logger {
     this.log('fatal', msg, data);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for pino-compatible child logger bindings
   child(_bindings: Record<string, unknown>): Logger {
     const child = new Logger({
       level: Object.keys(LOG_LEVELS).find(

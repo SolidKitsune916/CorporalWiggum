@@ -25,6 +25,7 @@ export class DatabaseBackup {
   /**
    * Create a backup of the database
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for future use (backup metadata)
   static async createBackup(_description?: string): Promise<BackupInfo> {
     // Ensure backup directory exists
     fs.mkdirSync(BACKUP_DIR, { recursive: true });

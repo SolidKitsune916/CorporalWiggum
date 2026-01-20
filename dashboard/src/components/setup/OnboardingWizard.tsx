@@ -43,7 +43,8 @@ type WizardStep = 'welcome' | 'mode' | 'scanning' | 'results' | 'configure' | 'd
 export function OnboardingWizard({
   projectScan,
   projectInfo,
-  scanLoading: _scanLoading, // Available for future use, currently we detect completion via projectScan
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for explicit loading indicator
+  scanLoading: _scanLoading,
   workflowMode,
   onWorkflowModeChange,
   onScanProject,
@@ -66,6 +67,7 @@ export function OnboardingWizard({
   useEffect(() => {
     if (projectScan?.detectedCommands && projectScan !== initializedScanRef.current) {
       initializedScanRef.current = projectScan;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: initialize form from scan results
       setCommands({
         build: projectScan.detectedCommands.build || '',
         dev: projectScan.detectedCommands.dev || '',

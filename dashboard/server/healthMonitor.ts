@@ -189,6 +189,7 @@ export class HealthMonitor extends EventEmitter {
    * Recover a session on server startup
    * Returns the session if it can be recovered, null otherwise
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for future project-specific recovery
   async recoverSession(_projectPath: string): Promise<ActiveSession | null> {
     const sessionRepo = getSessionRepository();
 

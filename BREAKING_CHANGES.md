@@ -61,6 +61,15 @@ These files export both components and non-component values, which breaks React 
 - **Why skipped**: Adding this dependency could cause unnecessary re-renders or change callback identity unexpectedly
 - **Suggested fix**: Review if `loopStatus.running` should be in the dependency array or if the callback should be restructured
 
+## npm Audit Vulnerabilities (Moderate Severity)
+
+### esbuild <=0.24.2
+- **Issue**: Development server can be exploited to make requests and read responses (GHSA-67mh-4wv8-2f99)
+- **Affected packages**: vite-node, vitepress, vitest (7 moderate severity vulnerabilities total)
+- **Why skipped**: Fix requires `npm audit fix --force` which would downgrade vitepress from 1.x to 0.1.1 (breaking change)
+- **Impact**: Development environment only - not exploitable in production builds
+- **Suggested fix**: Wait for upstream packages to release compatible fixes
+
 ---
 
-*Last updated: 2026-01-16*
+*Last updated: 2026-01-19*

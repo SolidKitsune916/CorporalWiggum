@@ -82,6 +82,7 @@ export function GitHubPanel({ onSendMessage }: GitHubPanelProps) {
   }, [onSendMessage]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: fetch data on mount
     checkGitHub();
   }, [checkGitHub]);
 
