@@ -181,6 +181,8 @@ export function Dashboard({ backendPort }: DashboardProps) {
     clearExternalReposUrlValidation,
     setGitHubToken,
     listExternalRepos,
+    // Sub-agent telemetry
+    subAgentTelemetry,
   } = useWebSocket(wsUrl);
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -407,7 +409,7 @@ export function Dashboard({ backendPort }: DashboardProps) {
             {/* Status Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* Loop Status */}
-              <LoopStatus status={loopStatus} />
+              <LoopStatus status={loopStatus} subAgentTelemetry={subAgentTelemetry} />
 
               {/* Context Meter */}
               <ContextMeter iteration={loopStatus.iteration} />

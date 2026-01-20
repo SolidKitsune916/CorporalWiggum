@@ -1,13 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { LoopStatus as LoopStatusType } from '@/types';
+import type { LoopStatus as LoopStatusType, SubAgentTelemetry } from '@/types';
 import { Play, Pause, Clock, Hash, Target } from 'lucide-react';
+import { SubAgentPanel } from './SubAgentPanel';
 
 interface LoopStatusProps {
   status: LoopStatusType;
+  subAgentTelemetry?: SubAgentTelemetry | null;
 }
 
-export function LoopStatus({ status }: LoopStatusProps) {
+export function LoopStatus({ status, subAgentTelemetry }: LoopStatusProps) {
   const formatDuration = (startedAt?: Date) => {
     if (!startedAt) return '-';
     const now = new Date();
@@ -19,72 +21,83 @@ export function LoopStatus({ status }: LoopStatusProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          {status.running ? (
-            <Play className="h-5 w-5 text-green-500" />
-          ) : (
-            <Pause className="h-5 w-5 text-muted-foreground" />
-          )}
-          Loop Status
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">State</span>
-          <Badge variant={status.running ? 'success' : 'secondary'}>
-            {status.running ? 'Running' : 'Stopped'}
-          </Badge>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Mode</span>
-          <Badge variant="outline">{status.mode || 'None'}</Badge>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Hash className="h-4 w-4" />
-            Iteration
-          </span>
-          <span className="font-mono font-semibold">
-            {status.iteration}
-            {status.maxIterations > 0 && (
-              <span className="text-muted-foreground">/{status.maxIterations}</span>
+    <>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            {status.running ? (
+              <Play className="h-5 w-5 text-green-500" />
+            ) : (
+              <Pause className="h-5 w-5 text-muted-foreground" />
             )}
-          </span>
+            Loop Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">State</span>
+            <Badge variant={status.running ? 'success' : 'secondary'}>
+              {status.running ? 'Running' : 'Stopped'}
+            </Badge>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Mode</span>
+            <Badge variant="outline">{status.mode || 'None'}</Badge>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Hash className="h-4 w-4" />
+              Iteration
+            </span>
+            <span className="font-mono font-semibold">
+              {status.iteration}
+              {status.maxIterations > 0 && (
+                <span className="text-muted-foreground">/{status.maxIterations}</span>
+              )}
+            </span>
+          </div>
+
+          {status.running && (
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                Duration
+              </span>
+              <span className="font-mono">{formatDuration(status.startedAt)}</span>
+            </div>
+          )}
+
+          {status.workScope && (
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Target className="h-4 w-4" />
+                Scope
+              </span>
+              <span className="truncate text-sm max-w-[150px]" title={status.workScope}>
+                {status.workScope}
+              </span>
+            </div>
+          )}
+
+          {status.pid && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">PID</span>
+              <span className="font-mono text-sm">{status.pid}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      {/* Sub-agent Telemetry Panel */}
+      {status.running && (
+        <div className="mt-4">
+          <SubAgentPanel
+            telemetry={subAgentTelemetry ?? null}
+            isRunning={status.running}
+          />
         </div>
-
-        {status.running && (
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              Duration
-            </span>
-            <span className="font-mono">{formatDuration(status.startedAt)}</span>
-          </div>
-        )}
-
-        {status.workScope && (
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Target className="h-4 w-4" />
-              Scope
-            </span>
-            <span className="truncate text-sm max-w-[150px]" title={status.workScope}>
-              {status.workScope}
-            </span>
-          </div>
-        )}
-
-        {status.pid && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">PID</span>
-            <span className="font-mono text-sm">{status.pid}</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </>
   );
 }
