@@ -15,6 +15,7 @@ import { execSync } from 'child_process';
 import { resolveProjectOrExit } from '../lib/resolve.js';
 import { getDb, getRalphDir } from '../lib/database.js';
 import { EXIT_CODES } from '../lib/exit-codes.js';
+import { broadcastWebhooks, createStoppedPayload } from '../lib/webhook.js';
 
 /**
  * LoopMode type (matches dashboard/src/types/index.ts)
@@ -29,6 +30,7 @@ interface ActiveSession {
   projectId: string;
   pid: number;
   mode: LoopMode;
+  startedAt: string;
 }
 
 /**
@@ -140,12 +142,14 @@ function getActiveLoop(projectId: string): ActiveSession | null {
   const row = db
     .prepare(
       `
-      SELECT id, project_id, pid, mode FROM active_sessions
+      SELECT id, project_id, pid, mode, started_at FROM active_sessions
       WHERE project_id = ? AND state IN ('running', 'paused')
       ORDER BY started_at DESC LIMIT 1
     `
     )
-    .get(projectId) as { id: string; project_id: string; pid: number; mode: string } | undefined;
+    .get(projectId) as
+    | { id: string; project_id: string; pid: number; mode: string; started_at: string }
+    | undefined;
 
   if (!row) return null;
 
@@ -154,6 +158,7 @@ function getActiveLoop(projectId: string): ActiveSession | null {
     projectId: row.project_id,
     pid: row.pid,
     mode: row.mode as LoopMode,
+    startedAt: row.started_at,
   };
 }
 
@@ -165,18 +170,19 @@ function getAllActiveLoops(): ActiveSession[] {
   const rows = db
     .prepare(
       `
-      SELECT id, project_id, pid, mode FROM active_sessions
+      SELECT id, project_id, pid, mode, started_at FROM active_sessions
       WHERE state IN ('running', 'paused')
       ORDER BY started_at DESC
     `
     )
-    .all() as Array<{ id: string; project_id: string; pid: number; mode: string }>;
+    .all() as Array<{ id: string; project_id: string; pid: number; mode: string; started_at: string }>;
 
   return rows.map((row) => ({
     id: row.id,
     projectId: row.project_id,
     pid: row.pid,
     mode: row.mode as LoopMode,
+    startedAt: row.started_at,
   }));
 }
 
@@ -259,6 +265,19 @@ export const stopCommand = new Command('stop')
             unregisterLoop(loop.id, loop.projectId, result.success);
 
             if (result.success) {
+              // Fire webhook (fire and forget)
+              const durationSec = Math.round(
+                (Date.now() - new Date(loop.startedAt).getTime()) / 1000
+              );
+              broadcastWebhooks(
+                createStoppedPayload({
+                  projectId: loop.projectId,
+                  sessionId: loop.id,
+                  mode: loop.mode,
+                  durationSeconds: durationSec,
+                })
+              );
+
               spinner.succeed(`Stopped ${loop.projectId} via ${result.method} (${result.durationMs}ms)`);
               stopped++;
             } else {
@@ -301,6 +320,20 @@ export const stopCommand = new Command('stop')
           unregisterLoop(session.id, project.id, result.success);
 
           if (result.success) {
+            // Fire webhook (fire and forget)
+            const durationSec = Math.round(
+              (Date.now() - new Date(session.startedAt).getTime()) / 1000
+            );
+            broadcastWebhooks(
+              createStoppedPayload({
+                projectId: project.id,
+                projectPath: project.path,
+                sessionId: session.id,
+                mode: session.mode,
+                durationSeconds: durationSec,
+              })
+            );
+
             spinner.succeed(`Stopped via ${result.method} (${result.durationMs}ms)`);
             process.exit(EXIT_CODES.SUCCESS);
           } else {
