@@ -147,17 +147,57 @@ export function ProjectCard({
   const getStatusDetail = () => {
     if (isRunning && instance) {
       const loopInfo = instance.loopStatus;
+
       if (loopInfo?.running) {
-        return `Loop ${loopInfo.iteration} - ${loopInfo.mode}`;
+        // Show mode, iteration, elapsed time, and cost
+        const iterationText = loopInfo.maxIterations
+          ? `${loopInfo.iteration}/${loopInfo.maxIterations}`
+          : `${loopInfo.iteration}`;
+
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-muted-foreground">
+              {loopInfo.mode} - Iteration {iterationText}
+            </span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <ElapsedTime startedAt={instance.startedAt} />
+              </span>
+              {loopInfo.costSpent !== undefined && loopInfo.costSpent > 0 && (
+                <span className="flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  <CostDisplay cents={loopInfo.costSpent} />
+                </span>
+              )}
+            </div>
+          </div>
+        );
       }
-      return `Port ${instance.backendPort}`;
+
+      // Instance running but loop not active
+      return (
+        <span className="text-sm text-muted-foreground">
+          Port {instance.backendPort}
+        </span>
+      );
     }
+
     if (!project.isRalphReady) {
-      return 'Missing AGENTS.md or CLAUDE.md';
+      return (
+        <span className="text-sm text-muted-foreground">
+          Missing AGENTS.md or CLAUDE.md
+        </span>
+      );
     }
-    return project.lastOpened
-      ? `Last opened: ${new Date(project.lastOpened).toLocaleDateString()}`
-      : 'Never opened';
+
+    return (
+      <span className="text-sm text-muted-foreground">
+        {project.lastOpened
+          ? `Last opened: ${new Date(project.lastOpened).toLocaleDateString()}`
+          : 'Never opened'}
+      </span>
+    );
   };
 
   const handleOpenDashboard = () => {
@@ -189,9 +229,7 @@ export function ProjectCard({
       </CardHeader>
 
       <CardContent className="flex-grow pb-3">
-        <p className="text-sm text-muted-foreground">
-          {getStatusDetail()}
-        </p>
+        {getStatusDetail()}
       </CardContent>
 
       <CardFooter className="pt-0 gap-2 flex-wrap">
