@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A control system for managing autonomous AI development loops across multiple local projects. Users can start, stop, monitor, and configure Ralph Wiggum loops from a central dashboard UI or CLI, with system-wide visibility into all running processes to prevent runaway loops and wasted API usage.
+A control system for managing autonomous AI development loops across multiple local projects. Users can start, stop, monitor, and configure Ralph Wiggum loops from a central dashboard UI or CLI, with system-wide visibility into all running processes, sub-agent tracking, and scriptability for automation.
 
 ## Core Value
 
@@ -12,62 +12,67 @@ A control system for managing autonomous AI development loops across multiple lo
 
 ### Validated
 
-<!-- Existing capabilities from the codebase -->
+<!-- v1.0 shipped 2026-01-20 -->
 
-- ✓ Autonomous build loop via `loop.sh` with Claude CLI — existing
-- ✓ Multiple execution modes (build, plan, plan-slc, plan-work, review) — existing
-- ✓ React dashboard with WebSocket real-time updates — existing
-- ✓ SQLite persistence for projects and sessions — existing
-- ✓ File watching for task/log updates — existing
-- ✓ Cost tracking and limits — existing
-- ✓ Runtime limits and safety controls — existing
-- ✓ Git integration (commits, branch validation) — existing
-- ✓ Multi-project registration in database — existing
-- ✓ VitePress documentation site — existing
+**Process Management — v1.0**
+- ✓ System-wide process registry tracking all running loops across all projects
+- ✓ Reliable loop stop that kills process and verifies termination
+- ✓ Orphan process detection and cleanup on dashboard startup
+- ✓ PID file management for each running loop (~/.ralph/pids/)
+- ✓ Graceful shutdown with SIGTERM before SIGKILL escalation
+
+**Dashboard — v1.0**
+- ✓ Autonomous build loop via `loop.sh` with Claude CLI
+- ✓ Multiple execution modes (build, plan, plan-slc, plan-work, review)
+- ✓ React dashboard with WebSocket real-time updates
+- ✓ SQLite persistence for projects and sessions
+- ✓ File watching for task/log updates with debouncing
+- ✓ Cost tracking and limits
+- ✓ Runtime limits and safety controls
+- ✓ Git integration (commits, branch validation)
+- ✓ Multi-project registration in database
+- ✓ VitePress documentation site
+- ✓ Reliable start/stop with intermediate UI states
+- ✓ Project switching with clean state reset
+
+**Launcher Hub — v1.0**
+- ✓ Dedicated launcher view as central hub for all projects
+- ✓ Real-time status of each project (running/stopped/error)
+- ✓ Start/stop controls per project with immediate feedback
+- ✓ Active loop count in global header (always visible)
+- ✓ Cost/runtime display per active loop
+
+**CLI Tool — v1.0**
+- ✓ `ralph status` — show all running loops system-wide
+- ✓ `ralph start <project> [mode]` — start a loop on a project
+- ✓ `ralph stop <project>` — stop a loop with verified termination
+- ✓ `ralph stop --all` — stop all running loops
+- ✓ `ralph attach <project>` — stream live output from running loop
+- ✓ `ralph list` — list all registered projects
+- ✓ `ralph logs <project>` — tail recent logs
+- ✓ `ralph watch <project>` — wait for completion signal
+
+**Sub-agent Observability — v1.0**
+- ✓ Track sub-agent spawns per iteration
+- ✓ Display sub-agent count and cost breakdown in telemetry
+- ✓ Alert when sub-agent spawning exceeds threshold
+- ✓ Session summary showing total sub-agents spawned
+
+**Scriptability — v1.0**
+- ✓ Exit codes from CLI for scripting (0=success, non-zero=error)
+- ✓ JSON output mode for `ralph status --json` and `ralph list --json`
+- ✓ Auto-stop via `ralph watch` when completion signal detected
+- ✓ Webhook notifications on loop completion/failure
 
 ### Active
 
-<!-- What we're building -->
+<!-- v1.1+ candidates -->
 
-**Process Management (P0 — Critical)**
-- [ ] System-wide process registry tracking all running loops across all projects
-- [ ] Reliable loop stop that kills process and verifies termination
-- [ ] Orphan process detection and cleanup on dashboard startup
-- [ ] PID file management for each running loop
-- [ ] Graceful shutdown with SIGTERM before SIGKILL escalation
-
-**Launcher Page (P0 — Critical)**
-- [ ] Dedicated launcher view as central hub for all projects
-- [ ] Real-time status of each project (running/stopped/error)
-- [ ] Start/stop controls per project with immediate feedback
-- [ ] Active loop count in global header (always visible)
-- [ ] Cost/runtime display per active loop
-
-**CLI Tool (P0 — Critical)**
-- [ ] `ralph status` — show all running loops system-wide
-- [ ] `ralph start <project> [mode]` — start a loop on a project
-- [ ] `ralph stop <project>` — stop a loop with verified termination
-- [ ] `ralph stop --all` — stop all running loops
-- [ ] `ralph attach <project>` — stream live output from running loop
-- [ ] `ralph list` — list all registered projects
-- [ ] `ralph logs <project>` — tail recent logs
-
-**Dashboard Fixes (P0 — Critical)**
-- [ ] Fix unreliable loop start/stop (process not actually starting/stopping)
-- [ ] Fix task list not updating (file watcher or WebSocket issue)
-- [ ] Fix project switching (navigation state management)
-
-**Sub-agent Observability (P1 — High)**
-- [ ] Track sub-agent spawns per iteration
-- [ ] Display sub-agent count and cost breakdown in telemetry
-- [ ] Alert when sub-agent spawning exceeds threshold
-- [ ] Session summary showing total sub-agents spawned
-
-**Scriptability (P1 — High)**
-- [ ] Exit codes from CLI for scripting (0=success, non-zero=error)
-- [ ] JSON output mode for `ralph status` and `ralph list`
-- [ ] Configurable auto-stop after completion (for overnight runs)
-- [ ] Webhook notifications on loop completion/failure
+**Advanced Features (P2 — Nice to Have)**
+- Web-based terminal emulator in dashboard for CLI access
+- Loop scheduling (start at specific time)
+- Project templates for quick initialization
+- Cost forecasting based on task complexity
 
 ### Out of Scope
 
@@ -79,26 +84,30 @@ A control system for managing autonomous AI development loops across multiple lo
 
 ## Context
 
-**Current State:**
-- Dashboard exists but has reliability issues with loop start/stop
-- Task list sometimes doesn't reflect actual file state
-- Project switching in multi-project view is broken
-- No system-wide process registry — loops can become orphaned
-- No CLI interface for terminal-based control
-- No visibility into sub-agent spawning behavior
+**Current State (v1.0 shipped 2026-01-20):**
+- Full process management with PID files, registry, orphan detection
+- Reliable dashboard with start/stop confirmation and file watching
+- Complete CLI tool with 8 commands
+- Launcher hub with live status, cost, and elapsed time
+- Sub-agent tracking with warnings and session summaries
+- Scriptability with exit codes, JSON output, watch command, webhooks
 
 **Technical Environment:**
-- React 19 + Express + WebSocket (existing dashboard)
-- SQLite via better-sqlite3 (existing persistence)
-- Bash `loop.sh` orchestrator (existing execution engine)
+- React 19 + Express + WebSocket (dashboard)
+- SQLite via better-sqlite3 (persistence)
+- Bash `loop.sh` orchestrator (execution engine)
 - Node.js 18+ / TypeScript 5.9
 - Claude CLI for AI execution
+- Commander.js CLI framework
 
 **Key Files:**
 - `dashboard/server/loopController.ts` — loop process management
+- `dashboard/server/processManager/` — PID files, registry, shutdown
 - `dashboard/server/fileWatcher.ts` — file change detection
 - `dashboard/src/hooks/useWebSocket.ts` — frontend state management
 - `dashboard/server/database/` — SQLite repositories
+- `cli/src/ralph.ts` — CLI entry point
+- `cli/src/commands/` — CLI command implementations
 - `loop.sh` — main execution script
 
 ## Constraints
@@ -112,9 +121,16 @@ A control system for managing autonomous AI development loops across multiple lo
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| PID file for process tracking | Reliable way to verify process state across restarts | — Pending |
-| CLI as separate Node script | Can share code with dashboard server, consistent behavior | — Pending |
-| SQLite for process registry | Already using SQLite, single source of truth | — Pending |
+| PID files at ~/.ralph/pids/ | User-writable, cross-project visible | ✓ Good |
+| JSON format for PID files | Machine-readable, extensible | ✓ Good |
+| ProcessRegistry wraps SessionRepository | Unified interface, keeps heartbeat | ✓ Good |
+| 5s SIGTERM timeout before SIGKILL | Balance responsiveness with grace period | ✓ Good |
+| CLI standalone database access | No dashboard dependency | ✓ Good |
+| CLI daemon mode (detached, stdio:ignore) | CLI can exit after spawn | ✓ Good |
+| Sub-agent detection via Task tool_use | Claude Code pattern, visible in stream-json | ✓ Good |
+| Exit codes: 0/1/2/64/65 | Unix conventions, specific error codes | ✓ Good |
+| Fire-and-forget webhooks | Don't block commands on HTTP | ✓ Good |
+| Session enrichment per listInstances() | Acceptable for infrequent launcher requests | ✓ Good |
 
 ---
-*Last updated: 2026-01-19 after initialization*
+*Last updated: 2026-01-20 after v1.0 milestone*
