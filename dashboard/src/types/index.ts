@@ -920,6 +920,10 @@ export interface LauncherInstance {
     running: boolean;
     iteration: number;
     mode: string;
+    // Session metrics for LAUN-02/LAUN-05
+    costSpent?: number;        // Cost in cents from SessionRepository
+    maxIterations?: number;    // From session config
+    state?: 'running' | 'paused' | 'stopping' | 'completed' | 'crashed';
   };
 }
 
