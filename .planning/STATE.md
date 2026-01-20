@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 5 of 6 (Sub-agent Observability)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-20 - Completed 05-01-PLAN.md (Sub-Agent Backend Foundation)
+Last activity: 2026-01-20 - Completed 05-02-PLAN.md (Sub-Agent Frontend UI)
 
-Progress: [██████████████░░] 14/17 plans (82%)
+Progress: [███████████████░] 15/17 plans (88%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 4.4 min
-- Total execution time: 1.05 hours
+- Total plans completed: 15
+- Average duration: 4.3 min
+- Total execution time: 1.12 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [██████████████░░] 14/17 plans (82%)
 | 02-dashboard-reliability | 4/4 | 18 min | 4.5 min |
 | 03-cli-core | 3/3 | 11 min | 3.7 min |
 | 04-launcher-hub | 3/3 | 10 min | 3.3 min |
-| 05-sub-agent-observability | 1/3 | 3 min | 3 min |
+| 05-sub-agent-observability | 2/3 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (4 min), 04-02 (3 min), 04-03 (3 min), 05-01 (3 min)
+- Last 5 plans: 04-02 (3 min), 04-03 (3 min), 05-01 (3 min), 05-02 (4 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -78,6 +78,10 @@ Recent decisions affecting current work:
 - Sub-agent detection via Task tool_use blocks in stream-json stderr (05-01)
 - Deduplication via toolUseId Set to prevent double-counting (05-01)
 - Session-level persistence in active_sessions table via migration 002 (05-01)
+- SubAgentPanel only renders when loop is running (avoid empty panel) (05-02)
+- Show last 5 iterations in breakdown (keeps panel compact) (05-02)
+- Default warning threshold 20 sub-agents per session (configurable via prop) (05-02)
+- Cost estimate rate $0.02 per sub-agent spawn (server calculates on broadcast) (05-02)
 
 ### Pending Todos
 
@@ -90,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 05-01-PLAN.md (Sub-Agent Backend Foundation)
+Stopped at: Completed 05-02-PLAN.md (Sub-Agent Frontend UI)
 Resume file: None
