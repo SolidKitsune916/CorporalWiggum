@@ -6,6 +6,7 @@ import type { LoopStatus, LoopMode, LogEntry } from '../src/types';
 import { getSessionRepository, type ActiveSession } from './database/repositories/SessionRepository.js';
 import { getExecutionHistoryRepository } from './database/repositories/ExecutionHistoryRepository.js';
 import { getProcessRegistry, GracefulShutdown } from './processManager/index.js';
+import { parseSubAgentSpawn } from './lib/subAgentParser.js';
 
 // Heartbeat interval in milliseconds
 const HEARTBEAT_INTERVAL_MS = 5000;
@@ -55,6 +56,12 @@ export class LoopController extends EventEmitter {
     maxIterations: 0,
   };
   private gracefulShutdown = new GracefulShutdown();
+
+  // Sub-agent tracking
+  private subAgentCount = 0;
+  private iterationSubAgentCounts: Map<number, number> = new Map();
+  private lastSubAgentSpawnAt: Date | null = null;
+  private seenToolUseIds: Set<string> = new Set(); // Prevent double-counting
 
   constructor(projectPath: string, ralphPath?: string) {
     super();
@@ -237,6 +244,12 @@ export class LoopController extends EventEmitter {
     };
     this.emit('status', this.status);
 
+    // Reset sub-agent tracking
+    this.subAgentCount = 0;
+    this.iterationSubAgentCounts.clear();
+    this.lastSubAgentSpawnAt = null;
+    this.seenToolUseIds.clear();
+
     // Register loop with ProcessRegistry (creates session + PID file)
     if (this.projectId && pid) {
       const processRegistry = getProcessRegistry();
@@ -328,6 +341,16 @@ export class LoopController extends EventEmitter {
     this.process.stderr?.on('data', (data) => {
       const lines = data.toString().split('\n').filter((l: string) => l.trim());
       lines.forEach((line: string) => {
+        // Check for sub-agent spawn FIRST (before other processing)
+        const spawnResult = parseSubAgentSpawn(line);
+        if (spawnResult.spawned && spawnResult.toolUseId) {
+          // Avoid double-counting same tool_use_id
+          if (!this.seenToolUseIds.has(spawnResult.toolUseId)) {
+            this.seenToolUseIds.add(spawnResult.toolUseId);
+            this.handleSubAgentSpawn(spawnResult.toolUseId);
+          }
+        }
+
         // Claude CLI outputs streaming JSON to stderr - these are not errors
         // Check if line is JSON streaming output from Claude
         const isClaudeStreamingJson = line.startsWith('{') && (
@@ -552,5 +575,47 @@ export class LoopController extends EventEmitter {
       type,
     };
     this.emit('log', entry);
+  }
+
+  /**
+   * Handle a sub-agent spawn detection
+   */
+  private handleSubAgentSpawn(toolUseId: string): void {
+    this.subAgentCount++;
+    this.lastSubAgentSpawnAt = new Date();
+
+    const currentIter = this.status.iteration;
+    const iterCount = (this.iterationSubAgentCounts.get(currentIter) || 0) + 1;
+    this.iterationSubAgentCounts.set(currentIter, iterCount);
+
+    // Update database
+    if (this.sessionId) {
+      try {
+        const sessionRepo = getSessionRepository();
+        sessionRepo.updateSubAgentCount(this.sessionId, 1);
+      } catch {
+        // Ignore database errors for sub-agent tracking
+      }
+    }
+
+    // Emit event for UI update
+    this.emit('subagent:spawned', {
+      iteration: currentIter,
+      count: this.subAgentCount,
+      toolUseId,
+    });
+
+    this.emitLog(`Sub-agent spawned (total: ${this.subAgentCount}, iteration: ${iterCount})`, 'info');
+  }
+
+  /**
+   * Get sub-agent telemetry for this session
+   */
+  getSubAgentTelemetry(): { sessionTotal: number; iterationCounts: Record<number, number>; lastSpawnAt: Date | null } {
+    return {
+      sessionTotal: this.subAgentCount,
+      iterationCounts: Object.fromEntries(this.iterationSubAgentCounts),
+      lastSpawnAt: this.lastSubAgentSpawnAt,
+    };
   }
 }
