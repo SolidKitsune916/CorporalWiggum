@@ -20,21 +20,19 @@ import { LogHistory } from './LogHistory';
 import { TroubleshootPanel } from './TroubleshootPanel';
 import { StoriesGenerator } from './StoriesGenerator';
 import { SimpleModeChecklist } from './SimpleModeChecklist';
+import { GlobalHeader } from './launcher/GlobalHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   Settings,
   Terminal,
-  Wifi,
-  WifiOff,
   Wand2,
   FileText,
   ListTodo,
   ListChecks,
   Github,
   FileSearch,
-  Home,
   Sparkles,
   Server,
 } from 'lucide-react';
@@ -323,41 +321,14 @@ export function Dashboard({ backendPort }: DashboardProps) {
       )}
 
       {/* Header */}
-      <header className="border-b bg-card px-6 py-4" role="banner">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg overflow-hidden bg-primary/10">
-              <img 
-                src="/logo.png" 
-                alt="Corporal Wiggum Logo" 
-                className="h-full w-full object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold">
-                <span className="text-primary">Corporal Wiggum</span>
-                <span className="text-muted-foreground font-normal text-sm ml-2">Codename: R.A.L.P.H.</span>
-              </h1>
-              <p className="text-sm text-muted-foreground italic">
-                Recursive Autonomous Loop for Programming Heuristically
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
+      <GlobalHeader
+        currentView="dashboard"
+        rightContent={
+          <>
             <WorkflowModeToggle
               mode={workflowMode}
               onToggle={handleWorkflowModeChange}
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '?mode=launcher'}
-              className="gap-2"
-              aria-label="Go to project launcher"
-            >
-              <Home className="h-4 w-4" aria-hidden="true" />
-              Launcher
-            </Button>
             {gitStatus.repoName && (
               <a
                 href={`https://github.com/${gitStatus.repoName}`}
@@ -369,25 +340,12 @@ export function Dashboard({ backendPort }: DashboardProps) {
                 {gitStatus.repoName}
               </a>
             )}
-            <Badge variant={connected ? 'success' : 'destructive'} className="gap-1">
-              {connected ? (
-                <>
-                  <Wifi className="h-3 w-3" />
-                  Connected
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-3 w-3" />
-                  Disconnected
-                </>
-              )}
-            </Badge>
             <Badge variant={loopStatus.running ? 'default' : 'secondary'}>
               {loopStatus.running ? `Running: ${loopStatus.mode}` : 'Idle'}
             </Badge>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Main Content */}
       <div className="container mx-auto p-6">

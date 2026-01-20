@@ -7,27 +7,22 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useLauncher } from '@/hooks/useLauncher';
 import { ProjectCard } from './ProjectCard';
 import { AddProjectDialog } from './AddProjectDialog';
+import { GlobalHeader } from './GlobalHeader';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Plus,
   RefreshCw,
-  Wifi,
-  WifiOff,
   AlertCircle,
   FolderOpen,
   Loader2,
-  LayoutDashboard,
   CheckCircle,
   X,
 } from 'lucide-react';
 
 export function LauncherHome() {
   const {
-    connected,
     projects,
     projectsLoading,
-    instances,
     discoveredProjects,
     discovering,
     browseResult,
@@ -149,79 +144,34 @@ export function LauncherHome() {
     initializeProject(projectId);
   };
 
-  const runningCount = instances.length;
   const totalCount = projects.length;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-primary/10">
-                <img 
-                  src="/logo.png" 
-                  alt="Corporal Wiggum Logo" 
-                  className="h-full w-full object-contain"
-                />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">
-                  <span className="text-primary">Corporal Wiggum</span> Launcher
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage your R.A.L.P.H. projects
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.location.href = '/'}
-                className="gap-2"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Button>
-
-              <Badge variant={connected ? 'success' : 'destructive'}>
-                {connected ? (
-                  <><Wifi className="h-3 w-3 mr-1" /> Connected</>
-                ) : (
-                  <><WifiOff className="h-3 w-3 mr-1" /> Disconnected</>
-                )}
-              </Badge>
-
-              {runningCount > 0 && (
-                <Badge variant="secondary">
-                  {runningCount} Running
-                </Badge>
+      <GlobalHeader
+        currentView="launcher"
+        rightContent={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={listProjects}
+              disabled={projectsLoading}
+            >
+              {projectsLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
               )}
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={listProjects}
-                disabled={projectsLoading}
-              >
-                {projectsLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-              </Button>
-
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Project
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Project
+            </Button>
+          </>
+        }
+      />
 
       {/* Error Banner */}
       {error && (
