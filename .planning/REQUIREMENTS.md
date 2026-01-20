@@ -9,11 +9,11 @@ Requirements for this release. Each maps to roadmap phases.
 
 ### Process Management
 
-- [ ] **PROC-01**: System tracks all running loops across all projects in a central registry
-- [ ] **PROC-02**: Stop command kills process and verifies termination before reporting success
-- [ ] **PROC-03**: Dashboard startup detects and offers to clean up orphaned loop processes
-- [ ] **PROC-04**: Each running loop writes a PID file that persists across dashboard restarts
-- [ ] **PROC-05**: Stop uses SIGTERM with timeout, escalates to SIGKILL if process doesn't exit
+- [x] **PROC-01**: System tracks all running loops across all projects in a central registry
+- [x] **PROC-02**: Stop command kills process and verifies termination before reporting success
+- [x] **PROC-03**: Dashboard startup detects and offers to clean up orphaned loop processes
+- [x] **PROC-04**: Each running loop writes a PID file that persists across dashboard restarts
+- [x] **PROC-05**: Stop uses SIGTERM with timeout, escalates to SIGKILL if process doesn't exit
 
 ### Launcher Page
 
@@ -83,11 +83,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROC-01 | Phase 1 | Pending |
-| PROC-02 | Phase 1 | Pending |
-| PROC-03 | Phase 1 | Pending |
-| PROC-04 | Phase 1 | Pending |
-| PROC-05 | Phase 1 | Pending |
+| PROC-01 | Phase 1 | Complete |
+| PROC-02 | Phase 1 | Complete |
+| PROC-03 | Phase 1 | Complete |
+| PROC-04 | Phase 1 | Complete |
+| PROC-05 | Phase 1 | Complete |
 | LAUN-01 | Phase 4 | Pending |
 | LAUN-02 | Phase 4 | Pending |
 | LAUN-03 | Phase 4 | Pending |

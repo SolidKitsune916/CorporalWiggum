@@ -12,7 +12,7 @@ This roadmap transforms Ralph Wiggum from a single-project dashboard with reliab
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Process Foundation** - Central registry and reliable process lifecycle management
+- [x] **Phase 1: Process Foundation** - Central registry and reliable process lifecycle management
 - [ ] **Phase 2: Dashboard Reliability** - Fix existing start/stop/task list/navigation issues
 - [ ] **Phase 3: CLI Core** - Terminal interface for loop control
 - [ ] **Phase 4: Launcher Hub** - Multi-project dashboard view
@@ -34,9 +34,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Process registry and PID file infrastructure (PROC-01, PROC-04)
-- [ ] 01-02-PLAN.md — Stop verification and graceful shutdown (PROC-02, PROC-05)
-- [ ] 01-03-PLAN.md — Orphan detection and cleanup (PROC-03)
+- [x] 01-01-PLAN.md — Process registry and PID file infrastructure (PROC-01, PROC-04)
+- [x] 01-02-PLAN.md — Stop verification and graceful shutdown (PROC-02, PROC-05)
+- [x] 01-03-PLAN.md — Orphan detection and cleanup (PROC-03)
 
 ### Phase 2: Dashboard Reliability
 **Goal**: Existing dashboard reliably starts, stops, and displays loop state
@@ -131,7 +131,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Process Foundation | 0/3 | Planned | - |
+| 1. Process Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Dashboard Reliability | 0/4 | Not started | - |
 | 3. CLI Core | 0/3 | Not started | - |
 | 4. Launcher Hub | 0/3 | Not started | - |
