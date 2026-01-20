@@ -23,6 +23,8 @@ export interface PRDJson {
 
 export interface LoopStatus {
   running: boolean;
+  starting?: boolean;  // true during process spawn, false once confirmed running
+  stopping?: boolean;  // true during graceful shutdown, false once confirmed stopped
   mode: LoopMode | null;
   iteration: number;
   maxIterations: number;
