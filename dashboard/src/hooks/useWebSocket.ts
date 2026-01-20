@@ -330,6 +330,126 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
   // Track previous loop running state for transition detection (avoids stale closure issue)
   const prevLoopRunningRef = useRef(false);
 
+  // Reset all state when URL changes (project switch)
+  // This runs BEFORE connect() establishes the new connection
+  useEffect(() => {
+    // Reset cleanup flag to allow new connections
+    isCleaningUpRef.current = false;
+
+    // Reset core state to defaults
+    setLoopStatus(DEFAULT_LOOP_STATUS);
+    setTasks(DEFAULT_TASKS);
+    setGitStatus(DEFAULT_GIT_STATUS);
+    setLogs([]);
+    setProjectConfig(null);
+    setProjectInfo(null);
+    setProjectScan(null);
+    setEnabledAgents(DEFAULT_ENABLED_AGENTS);
+
+    // Reset plan generator state
+    setPlanStatus(DEFAULT_PLAN_STATUS);
+    setPlanOutput('');
+    setPlanComplete(null);
+    setPlanError(null);
+
+    // Reset PRD generator state
+    setPrdStatus(DEFAULT_PRD_STATUS);
+    setPrdOutput('');
+    setPrdComplete(null);
+    setPrdError(null);
+
+    // Reset review generator state
+    setReviewGeneratorStatus(DEFAULT_REVIEW_GENERATOR_STATUS);
+    setReviewGeneratorOutput('');
+    setReviewGeneratorComplete(null);
+    setReviewGeneratorError(null);
+
+    // Reset review runner state
+    setReviewRunnerStatus(DEFAULT_REVIEW_RUNNER_STATUS);
+    setReviewRunnerOutput('');
+    setReviewRunnerResult(null);
+    setReviewRunnerError(null);
+
+    // Reset workflow mode to default
+    setWorkflowModeState('simple');
+
+    // Reset document and preview state
+    setSelectedDocPaths([]);
+    setPreviewDoc(null);
+    setIsLoadingPreview(false);
+
+    // Reset CLAUDE.md state
+    setClaudeMdFiles([]);
+    setClaudeMdContent(null);
+    setClaudeMdLoading(false);
+    setClaudeMdApplying(false);
+
+    // Reset dependency state
+    setDependencyStatus([]);
+    setDependencyLoading(false);
+
+    // Reset config preview state
+    setConfigPreviewDoc(null);
+    setConfigPreviewLoading(false);
+
+    // Reset agent and rules state
+    setAvailableAgents([]);
+    setCursorRules([]);
+    setAgentsLoading(false);
+    setRulesLoading(false);
+    setRepoAgents([]);
+    setRepoAgentsLoading(false);
+    setAgentInstalling(null);
+
+    // Reset port management state
+    setPortProcesses([]);
+    setPortsLoading(false);
+    setPortsError(null);
+
+    // Reset log management state
+    setLogSessions([]);
+    setLogsLoading(false);
+    setLogsError(null);
+    setLogContent(null);
+    setLogContentLoading(false);
+
+    // Reset troubleshoot state
+    setTroubleshootRunning(false);
+    setTroubleshootOutput('');
+    setTroubleshootError(null);
+
+    // Reset stories generator state
+    setStoriesGenerating(false);
+    setStoriesOutput('');
+    setStoriesComplete(null);
+    setStoriesError(null);
+
+    // Reset iterative PRD generator state
+    setPrdInterviewSession(null);
+    setPrdVersionHistory(null);
+    setPrdInterviewAnalysis(null);
+    setPrdInterviewQuestions(null);
+    setPrdInterviewStatus({ phase: 'version-select', analyzing: false, generating: false });
+    setPrdInterviewOutput('');
+    setPrdInterviewComplete(null);
+    setPrdInterviewError(null);
+
+    // Reset external repos state
+    setExternalRepos([]);
+    setExternalReposLoading(false);
+    setExternalReposCacheStatus({});
+    setExternalReposMcpStatus(null);
+    setExternalReposCacheStats(null);
+    setExternalReposFetching(false);
+    setExternalReposError(null);
+    setExternalReposUrlValidation(null);
+
+    // Reset the previous loop running ref to prevent false toast on reconnection
+    prevLoopRunningRef.current = false;
+
+    // Note: connect() will be called by its own useEffect after this
+  }, [url]);
+
   const connect = useCallback(() => {
     if (isCleaningUpRef.current) {
       return;
