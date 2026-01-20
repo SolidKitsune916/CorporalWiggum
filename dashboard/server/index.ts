@@ -1745,6 +1745,26 @@ ${audienceContent}
     broadcast({ type: 'loop:log', payload: entry });
   });
 
+  // Sub-agent telemetry broadcast
+  loopController.on('subagent:spawned', (data: { iteration: number; count: number; toolUseId: string }) => {
+    // Get full telemetry from controller
+    const telemetry = loopController.getSubAgentTelemetry();
+
+    // Estimate cost ($0.02 per sub-agent)
+    const estimatedCost = telemetry.sessionTotal * 0.02;
+
+    // Broadcast to all connected clients
+    broadcast({
+      type: 'subagent:status',
+      payload: {
+        sessionTotal: telemetry.sessionTotal,
+        iterationCounts: telemetry.iterationCounts,
+        lastSpawnAt: telemetry.lastSpawnAt?.toISOString() ?? null,
+        estimatedCost,
+      },
+    });
+  });
+
   // Plan generator events
   planGenerator.on('status', (status) => {
     broadcast({ type: 'plan:status', payload: status });
