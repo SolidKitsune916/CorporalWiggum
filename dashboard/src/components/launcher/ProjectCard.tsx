@@ -3,6 +3,7 @@
  * Displays project info and provides actions (Open Dashboard, Start/Stop, Remove)
  */
 
+import { useState, useEffect } from 'react';
 import type { LauncherProject, LauncherInstance } from '@/types';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,51 @@ import {
   CheckCircle,
   Loader2,
   Settings,
+  Clock,
+  DollarSign,
 } from 'lucide-react';
+
+/**
+ * ElapsedTime - Displays elapsed time from startedAt, updates every second
+ * Research note: Calculate on render, use interval for re-render only (no stale state)
+ */
+function ElapsedTime({ startedAt }: { startedAt: string }) {
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate(n => n + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
+  const hours = Math.floor(elapsed / 3600);
+  const minutes = Math.floor((elapsed % 3600) / 60);
+  const seconds = elapsed % 60;
+
+  return (
+    <span className="font-mono text-xs">
+      {hours.toString().padStart(2, '0')}:
+      {minutes.toString().padStart(2, '0')}:
+      {seconds.toString().padStart(2, '0')}
+    </span>
+  );
+}
+
+/**
+ * CostDisplay - Formats cost in cents as USD currency
+ * Research note: Use Intl.NumberFormat for proper locale-aware formatting
+ */
+function CostDisplay({ cents }: { cents: number }) {
+  const dollars = cents / 100;
+  const formatted = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(dollars);
+
+  return <span className="font-mono text-xs text-muted-foreground">{formatted}</span>;
+}
 
 interface ProjectCardProps {
   project: LauncherProject;
