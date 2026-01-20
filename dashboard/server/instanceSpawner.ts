@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import type { LauncherInstance } from '../src/types/index.js';
 import { PortManager, type PortPair } from './portManager.js';
 import { TemplateManager } from './templateManager.js';
+import { getSessionRepository } from './database/repositories/SessionRepository.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -417,17 +418,30 @@ export class InstanceSpawner extends EventEmitter {
   }
 
   /**
-   * List all running instances
+   * List all running instances, enriched with session metrics
    */
   listInstances(): LauncherInstance[] {
-    return Array.from(this.instances.values()).map(instance => ({
-      projectId: instance.projectId,
-      backendPort: instance.backendPort,
-      frontendPort: instance.frontendPort,
-      pid: instance.pid,
-      startedAt: instance.startedAt,
-      loopStatus: instance.loopStatus,
-    }));
+    const sessionRepo = getSessionRepository();
+
+    return Array.from(this.instances.values()).map(instance => {
+      // Get active session for this project to include metrics
+      const session = sessionRepo.getActiveSessionForProject(instance.projectId);
+
+      return {
+        projectId: instance.projectId,
+        backendPort: instance.backendPort,
+        frontendPort: instance.frontendPort,
+        pid: instance.pid,
+        startedAt: instance.startedAt,
+        loopStatus: instance.loopStatus ? {
+          ...instance.loopStatus,
+          // Enrich with session data if available
+          costSpent: session?.costSpent,
+          maxIterations: session?.maxIterations ?? undefined,
+          state: session?.state,
+        } : undefined,
+      };
+    });
   }
 
   /**
@@ -438,11 +452,14 @@ export class InstanceSpawner extends EventEmitter {
   }
 
   /**
-   * Get instance info for a project
+   * Get instance info for a project, enriched with session metrics
    */
   getInstance(projectId: string): LauncherInstance | null {
     const instance = this.instances.get(projectId);
     if (!instance) return null;
+
+    const sessionRepo = getSessionRepository();
+    const session = sessionRepo.getActiveSessionForProject(projectId);
 
     return {
       projectId: instance.projectId,
@@ -450,7 +467,13 @@ export class InstanceSpawner extends EventEmitter {
       frontendPort: instance.frontendPort,
       pid: instance.pid,
       startedAt: instance.startedAt,
-      loopStatus: instance.loopStatus,
+      loopStatus: instance.loopStatus ? {
+        ...instance.loopStatus,
+        // Enrich with session data if available
+        costSpent: session?.costSpent,
+        maxIterations: session?.maxIterations ?? undefined,
+        state: session?.state,
+      } : undefined,
     };
   }
 
