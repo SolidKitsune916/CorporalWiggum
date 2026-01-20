@@ -13,3 +13,4 @@ export {
   type ActiveLoopInfo,
   type OrphanInfo,
 } from './ProcessRegistry.js';
+export { GracefulShutdown, type StopResult } from './GracefulShutdown.js';
