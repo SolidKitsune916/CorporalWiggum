@@ -36,6 +36,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sentry/node": "^8.0.0",
     "@sentry/react": "^8.0.0",
+    "@types/uuid": "^10.0.0",
     "better-sqlite3": "^12.6.0",
     "chokidar": "^5.0.0",
     "class-variance-authority": "^0.7.1",
@@ -50,6 +51,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "uuid": "^13.0.0",
     "ws": "^8.19.0"
   },
   "devDependencies": {
