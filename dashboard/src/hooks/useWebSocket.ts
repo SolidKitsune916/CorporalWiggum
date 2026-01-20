@@ -103,6 +103,8 @@ interface UseWebSocketReturn {
   portsError: string | null;
   scanPorts: () => void;
   killPort: (pid: number) => void;
+  // Task list refresh
+  refreshTasks: () => void;
   // Log management state and handlers
   logSessions: LogSession[];
   logsLoading: boolean;
@@ -1328,6 +1330,13 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     }
   }, []);
 
+  // Task list refresh - force refresh when file watcher misses changes
+  const refreshTasks = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'tasks:refresh', payload: {} }));
+    }
+  }, []);
+
   // Log management callbacks
   const listLogs = useCallback(() => {
     setLogsLoading(true);
@@ -1660,6 +1669,8 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     portsError,
     scanPorts,
     killPort,
+    // Task list refresh
+    refreshTasks,
     // Log management
     logSessions,
     logsLoading,

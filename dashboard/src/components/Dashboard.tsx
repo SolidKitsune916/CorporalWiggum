@@ -128,6 +128,8 @@ export function Dashboard({ backendPort }: DashboardProps) {
     portsError,
     scanPorts,
     killPort,
+    // Task list refresh
+    refreshTasks,
     // Log management
     logSessions,
     logsLoading,
@@ -458,7 +460,7 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
             {/* Tasks */}
             <div className="grid gap-6 lg:grid-cols-2">
-              <TaskList tasks={tasks} workflowMode={workflowMode} />
+              <TaskList tasks={tasks} workflowMode={workflowMode} onRefresh={refreshTasks} />
               <div className="space-y-4">
                 <h3 className="flex items-center gap-2 text-lg font-semibold">
                   <Terminal className="h-5 w-5" />
