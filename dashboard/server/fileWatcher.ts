@@ -27,11 +27,15 @@ export class FileWatcher extends EventEmitter {
   }
 
   start() {
-    // Watch IMPLEMENTATION_PLAN.md
+    // Watch IMPLEMENTATION_PLAN.md with awaitWriteFinish for editor compatibility
     const planPath = path.join(this.projectPath, 'IMPLEMENTATION_PLAN.md');
     this.watcher = chokidar.watch(planPath, {
       persistent: true,
       ignoreInitial: false,
+      awaitWriteFinish: {
+        stabilityThreshold: 200, // Wait 200ms after last change
+        pollInterval: 50,
+      },
     });
 
     this.watcher.on('add', () => this.parseTasks());
@@ -87,11 +91,15 @@ export class FileWatcher extends EventEmitter {
     this.tasksJsonWatcher.on('add', () => this.emitTasksJson());
     this.tasksJsonWatcher.on('change', () => this.emitTasksJson());
 
-    // Watch prd.json for simple mode user stories
+    // Watch prd.json for simple mode user stories with awaitWriteFinish for editor compatibility
     const prdJsonPath = path.join(this.projectPath, 'prd.json');
     this.prdJsonWatcher = chokidar.watch(prdJsonPath, {
       persistent: true,
       ignoreInitial: false,
+      awaitWriteFinish: {
+        stabilityThreshold: 200, // Wait 200ms after last change
+        pollInterval: 50,
+      },
     });
 
     this.prdJsonWatcher.on('add', () => this.parseTasks());
@@ -136,6 +144,14 @@ export class FileWatcher extends EventEmitter {
 
   getWorkflowMode(): 'simple' | 'advanced' {
     return this.workflowMode;
+  }
+
+  /**
+   * Force a task list refresh - useful when file watcher misses changes
+   */
+  public async forceTaskRefresh(): Promise<void> {
+    await this.parseTasks();
+    // Note: parseTasks already emits 'tasks' event
   }
 
   private async updateMode() {
