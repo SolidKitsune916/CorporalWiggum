@@ -14,6 +14,7 @@ import fs from 'fs';
 import { execSync } from 'child_process';
 import { resolveProjectOrExit } from '../lib/resolve.js';
 import { getDb, getRalphDir } from '../lib/database.js';
+import { EXIT_CODES } from '../lib/exit-codes.js';
 
 /**
  * LoopMode type (matches dashboard/src/types/index.ts)
@@ -270,17 +271,19 @@ export const stopCommand = new Command('stop')
           console.log();
           if (failed === 0) {
             console.log(chalk.green(`Stopped ${stopped} loop${stopped === 1 ? '' : 's'}`));
+            process.exit(EXIT_CODES.SUCCESS);
           } else {
             console.log(
               chalk.yellow(`Stopped ${stopped}, failed ${failed}`)
             );
+            process.exit(EXIT_CODES.GENERAL_ERROR);
           }
         } else {
           // Stop single project
           if (!projectArg) {
             console.error(chalk.red('Project argument required'));
             console.error(chalk.dim("Use 'ralph stop <project>' or 'ralph stop --all'"));
-            process.exit(1);
+            process.exit(EXIT_CODES.INVALID_USAGE);
           }
 
           const project = resolveProjectOrExit(projectArg);
@@ -289,7 +292,7 @@ export const stopCommand = new Command('stop')
           if (!session) {
             console.error(chalk.red(`No running loop for ${project.name}`));
             console.error(chalk.dim("Use 'ralph status' to see running loops"));
-            process.exit(1);
+            process.exit(EXIT_CODES.NOT_FOUND);
           }
 
           const spinner = ora(`Stopping loop for ${project.name}...`).start();
@@ -299,14 +302,15 @@ export const stopCommand = new Command('stop')
 
           if (result.success) {
             spinner.succeed(`Stopped via ${result.method} (${result.durationMs}ms)`);
+            process.exit(EXIT_CODES.SUCCESS);
           } else {
             spinner.fail('Failed to stop loop');
-            process.exit(1);
+            process.exit(EXIT_CODES.GENERAL_ERROR);
           }
         }
       } catch (err) {
         console.error(chalk.red(`Error: ${(err as Error).message}`));
-        process.exit(1);
+        process.exit(EXIT_CODES.GENERAL_ERROR);
       }
     }
   );

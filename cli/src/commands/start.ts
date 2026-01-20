@@ -14,6 +14,7 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { resolveProjectOrExit } from '../lib/resolve.js';
 import { getDb, getRalphDir } from '../lib/database.js';
+import { EXIT_CODES } from '../lib/exit-codes.js';
 
 /**
  * LoopMode type (matches dashboard/src/types/index.ts)
@@ -189,7 +190,7 @@ export const startCommand = new Command('start')
         if (!validModes.includes(mode as LoopMode)) {
           console.error(chalk.red(`Invalid mode: ${mode}`));
           console.error(chalk.dim(`Valid modes: ${validModes.join(', ')}`));
-          process.exit(1);
+          process.exit(EXIT_CODES.INVALID_USAGE);
         }
         const loopMode = mode as LoopMode;
 
@@ -201,7 +202,7 @@ export const startCommand = new Command('start')
         if (existing && isProcessAlive(existing.pid)) {
           console.error(chalk.red(`Loop already running for ${project.name} (PID: ${existing.pid})`));
           console.error(chalk.dim("Use 'ralph stop' to stop it first"));
-          process.exit(1);
+          process.exit(EXIT_CODES.ALREADY_EXISTS);
         }
 
         // Find loop.sh
@@ -211,7 +212,7 @@ export const startCommand = new Command('start')
           console.error(
             chalk.dim('Expected in project directory, RALPH_DIR, or relative to CLI')
           );
-          process.exit(1);
+          process.exit(EXIT_CODES.NOT_FOUND);
         }
 
         // Build command arguments
@@ -260,7 +261,7 @@ export const startCommand = new Command('start')
         const pid = child.pid;
         if (!pid) {
           spinner.fail('Failed to spawn process');
-          process.exit(1);
+          process.exit(EXIT_CODES.GENERAL_ERROR);
         }
 
         // Wait and verify process is alive
@@ -268,7 +269,7 @@ export const startCommand = new Command('start')
 
         if (!isProcessAlive(pid)) {
           spinner.fail('Loop failed to start');
-          process.exit(1);
+          process.exit(EXIT_CODES.GENERAL_ERROR);
         }
 
         // Register with database and PID file
@@ -286,9 +287,10 @@ export const startCommand = new Command('start')
         if (options.workScope) {
           console.log(chalk.dim(`Work scope: ${options.workScope}`));
         }
+        process.exit(EXIT_CODES.SUCCESS);
       } catch (err) {
         console.error(chalk.red(`Error: ${(err as Error).message}`));
-        process.exit(1);
+        process.exit(EXIT_CODES.GENERAL_ERROR);
       }
     }
   );
