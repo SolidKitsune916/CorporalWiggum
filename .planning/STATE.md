@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 4 of 6 (Launcher Hub)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-20 - Completed 04-01-PLAN.md (Session Metrics in Instance List)
+Last activity: 2026-01-20 - Completed 04-02-PLAN.md (LauncherContext and GlobalHeader)
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 4.9 min
-- Total execution time: 0.98 hours
+- Total plans completed: 12
+- Average duration: 4.7 min
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [█████████░] 92%
 | 01-process-foundation | 3/3 | 24 min | 8 min |
 | 02-dashboard-reliability | 4/4 | 18 min | 4.5 min |
 | 03-cli-core | 3/3 | 11 min | 3.7 min |
-| 04-launcher-hub | 1/3 | 4 min | 4 min |
+| 04-launcher-hub | 2/3 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (4 min), 03-02 (3 min), 03-03 (4 min), 04-01 (4 min)
+- Last 5 plans: 03-02 (3 min), 03-03 (4 min), 04-01 (4 min), 04-02 (3 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -68,6 +68,9 @@ Recent decisions affecting current work:
 - Log file discovery: ralph.log symlink first, then .ralph-logs directory (03-03)
 - Session query on each listInstances() call - acceptable for infrequent launcher requests (04-01)
 - Nullable enrichment fields for graceful degradation when no active session (04-01)
+- LauncherProvider wraps both views inside AccessibilityProvider (04-02)
+- GlobalHeader receives rightContent prop for view-specific additions (04-02)
+- Connection status and active count from LauncherContext, not local useLauncher (04-02)
 
 ### Pending Todos
 
@@ -80,5 +83,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 04-01-PLAN.md (Session Metrics in Instance List)
+Stopped at: Completed 04-02-PLAN.md (LauncherContext and GlobalHeader)
 Resume file: None
