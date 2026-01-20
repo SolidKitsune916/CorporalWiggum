@@ -100,12 +100,12 @@ Plans:
   2. Telemetry panel shows sub-agent count and cost breakdown
   3. Warning appears when sub-agent spawning exceeds threshold
   4. Session summary shows total sub-agents across all iterations
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Sub-agent parsing from Claude output
-- [ ] 05-02: Telemetry panel integration
-- [ ] 05-03: Threshold alerts and session summary
+- [ ] 05-01-PLAN.md — Sub-agent parsing and database tracking (OBSV-01)
+- [ ] 05-02-PLAN.md — Telemetry panel and WebSocket integration (OBSV-02)
+- [ ] 05-03-PLAN.md — Threshold alerts and session summary (OBSV-03, OBSV-04)
 
 ### Phase 6: Scriptability
 **Goal**: CLI supports scripting workflows with proper exit codes and machine output
@@ -135,7 +135,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 | 2. Dashboard Reliability | 4/4 | Complete | 2026-01-20 |
 | 3. CLI Core | 3/3 | Complete | 2026-01-20 |
 | 4. Launcher Hub | 3/3 | Complete | 2026-01-20 |
-| 5. Sub-agent Observability | 0/3 | Not started | - |
+| 5. Sub-agent Observability | 0/3 | Planned | - |
 | 6. Scriptability | 0/3 | Not started | - |
 
 ---
@@ -144,3 +144,4 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 *Phase 2 planned: 2026-01-19*
 *Phase 3 planned: 2026-01-20*
 *Phase 4 planned: 2026-01-20*
+*Phase 5 planned: 2026-01-20*
