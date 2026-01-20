@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 3 of 6 (CLI Core)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-20 - Completed 03-02-PLAN.md (Start/Stop Commands)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 - Completed 03-03-PLAN.md (Attach/Logs Commands)
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 5.1 min
-- Total execution time: 0.85 hours
+- Total plans completed: 10
+- Average duration: 5.0 min
+- Total execution time: 0.92 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [████████░░] 82%
 |-------|-------|-------|----------|
 | 01-process-foundation | 3/3 | 24 min | 8 min |
 | 02-dashboard-reliability | 4/4 | 18 min | 4.5 min |
-| 03-cli-core | 2/3 | 7 min | 3.5 min |
+| 03-cli-core | 3/3 | 11 min | 3.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (2 min), 02-04 (5 min), 03-01 (4 min), 03-02 (3 min)
+- Last 5 plans: 02-04 (5 min), 03-01 (4 min), 03-02 (3 min), 03-03 (4 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -62,6 +62,9 @@ Recent decisions affecting current work:
 - CLI spawns in daemon mode (detached:true, stdio:ignore) so CLI can exit (03-02)
 - Wait 500ms and verify process alive before returning start success (03-02)
 - Confirmation prompt for stop --all (skippable with --yes) (03-02)
+- fs.watch for file change detection in tailing utility (03-03)
+- Position tracking outputs only new content as file grows (03-03)
+- Log file discovery: ralph.log symlink first, then .ralph-logs directory (03-03)
 
 ### Pending Todos
 
@@ -74,5 +77,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 03-02-PLAN.md (Start/Stop Commands)
+Stopped at: Completed 03-03-PLAN.md (Attach/Logs Commands) - Phase 3 complete
 Resume file: None
