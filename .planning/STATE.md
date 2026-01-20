@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Never lose track of running loops. When stopped, it's stopped. When running, you see them all.
-**Current focus:** Phase 3 - CLI Core
+**Current focus:** Phase 4 - Launcher Hub
 
 ## Current Position
 
-Phase: 3 of 6 (CLI Core)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 03-03-PLAN.md (Attach/Logs Commands)
+Phase: 4 of 6 (Launcher Hub)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 04-01-PLAN.md (Session Metrics in Instance List)
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 5.0 min
-- Total execution time: 0.92 hours
+- Total plans completed: 11
+- Average duration: 4.9 min
+- Total execution time: 0.98 hours
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [█████████░] 91%
 | 01-process-foundation | 3/3 | 24 min | 8 min |
 | 02-dashboard-reliability | 4/4 | 18 min | 4.5 min |
 | 03-cli-core | 3/3 | 11 min | 3.7 min |
+| 04-launcher-hub | 1/3 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (5 min), 03-01 (4 min), 03-02 (3 min), 03-03 (4 min)
+- Last 5 plans: 03-01 (4 min), 03-02 (3 min), 03-03 (4 min), 04-01 (4 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - fs.watch for file change detection in tailing utility (03-03)
 - Position tracking outputs only new content as file grows (03-03)
 - Log file discovery: ralph.log symlink first, then .ralph-logs directory (03-03)
+- Session query on each listInstances() call - acceptable for infrequent launcher requests (04-01)
+- Nullable enrichment fields for graceful degradation when no active session (04-01)
 
 ### Pending Todos
 
@@ -77,5 +80,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 03-03-PLAN.md (Attach/Logs Commands) - Phase 3 complete
+Stopped at: Completed 04-01-PLAN.md (Session Metrics in Instance List)
 Resume file: None
