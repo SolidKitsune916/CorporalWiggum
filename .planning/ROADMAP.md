@@ -31,12 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Dashboard startup detects orphaned loops and offers cleanup
   4. Each loop has a PID file that survives dashboard restarts
   5. Stop uses SIGTERM with timeout, escalates to SIGKILL if needed
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Process registry and PID file infrastructure
-- [ ] 01-02: Stop verification and graceful shutdown
-- [ ] 01-03: Orphan detection and cleanup
+- [ ] 01-01-PLAN.md — Process registry and PID file infrastructure (PROC-01, PROC-04)
+- [ ] 01-02-PLAN.md — Stop verification and graceful shutdown (PROC-02, PROC-05)
+- [ ] 01-03-PLAN.md — Orphan detection and cleanup (PROC-03)
 
 ### Phase 2: Dashboard Reliability
 **Goal**: Existing dashboard reliably starts, stops, and displays loop state
@@ -131,7 +131,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Process Foundation | 0/3 | Not started | - |
+| 1. Process Foundation | 0/3 | Planned | - |
 | 2. Dashboard Reliability | 0/4 | Not started | - |
 | 3. CLI Core | 0/3 | Not started | - |
 | 4. Launcher Hub | 0/3 | Not started | - |
@@ -140,3 +140,4 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 
 ---
 *Roadmap created: 2026-01-19*
+*Phase 1 planned: 2026-01-19*
