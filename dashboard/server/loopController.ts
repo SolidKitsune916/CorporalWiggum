@@ -5,6 +5,7 @@ import fs from 'fs';
 import type { LoopStatus, LoopMode, LogEntry } from '../src/types';
 import { getSessionRepository, type ActiveSession } from './database/repositories/SessionRepository.js';
 import { getExecutionHistoryRepository } from './database/repositories/ExecutionHistoryRepository.js';
+import { getProcessRegistry } from './processManager/index.js';
 
 // Heartbeat interval in milliseconds
 const HEARTBEAT_INTERVAL_MS = 5000;
@@ -222,28 +223,27 @@ export class LoopController extends EventEmitter {
 
     const pid = this.process.pid;
 
-    // Create session in database for browser refresh resilience
+    // Register loop with ProcessRegistry (creates session + PID file)
     if (this.projectId && pid) {
-      try {
-        const sessionRepo = getSessionRepository();
-        const session = sessionRepo.createSession({
-          projectId: this.projectId,
-          pid,
-          mode,
+      const processRegistry = getProcessRegistry();
+      processRegistry
+        .registerLoop(this.projectId, this.projectPath, pid, mode, {
           maxIterations,
           maxRuntimeSeconds,
           costLimit,
           workScope,
           completionPromise: completionPromise || 'ALL_TASKS_COMPLETE',
-        });
-        this.sessionId = session.id;
-        this.emitLog(`Session created: ${session.id}`, 'info');
+        })
+        .then((sessionId) => {
+          this.sessionId = sessionId;
+          this.emitLog(`Session created: ${sessionId}`, 'info');
 
-        // Start heartbeat
-        this.startHeartbeat();
-      } catch (err) {
-        this.emitLog(`Failed to create session: ${(err as Error).message}`, 'warning');
-      }
+          // Start heartbeat
+          this.startHeartbeat();
+        })
+        .catch((err) => {
+          this.emitLog(`Failed to create session: ${(err as Error).message}`, 'warning');
+        });
     }
 
     this.status = {
@@ -343,36 +343,45 @@ export class LoopController extends EventEmitter {
       // Stop heartbeat
       this.stopHeartbeat();
 
-      // Record execution history and mark session complete
+      // Record execution history and unregister loop
       if (this.sessionId && this.projectId) {
+        const currentSessionId = this.sessionId;
+        const currentProjectId = this.projectId;
+        const success = code === 0;
+
         try {
           const sessionRepo = getSessionRepository();
           const historyRepo = getExecutionHistoryRepository();
-          const session = sessionRepo.getSession(this.sessionId);
+          const session = sessionRepo.getSession(currentSessionId);
 
           if (session) {
             // Record in execution history
             historyRepo.recordExecution({
-              projectId: this.projectId,
-              sessionId: this.sessionId,
+              projectId: currentProjectId,
+              sessionId: currentSessionId,
               mode: this.status.mode || 'build',
               iteration: this.status.iteration,
               startedAt: session.startedAt,
               endedAt: new Date().toISOString(),
-              success: code === 0,
-              exitReason: code === 0 ? 'completed' : 'error',
+              success,
+              exitReason: success ? 'completed' : 'error',
               tokensInput: session.tokensInputTotal,
               tokensOutput: session.tokensOutputTotal,
               costUsd: session.costSpent,
-              errorMessage: code !== 0 ? `Process exited with code ${code}` : undefined,
+              errorMessage: !success ? `Process exited with code ${code}` : undefined,
             });
-
-            // Mark session as completed
-            sessionRepo.markSessionCompleted(this.sessionId, code === 0 ? 'completed' : 'error');
           }
         } catch (err) {
           this.emitLog(`Failed to record execution: ${(err as Error).message}`, 'warning');
         }
+
+        // Unregister loop via ProcessRegistry (marks session complete + deletes PID file)
+        const processRegistry = getProcessRegistry();
+        processRegistry
+          .unregisterLoop(currentSessionId, currentProjectId, success)
+          .catch((err) => {
+            this.emitLog(`Failed to unregister loop: ${(err as Error).message}`, 'warning');
+          });
       }
 
       this.process = null;
@@ -391,14 +400,14 @@ export class LoopController extends EventEmitter {
       // Stop heartbeat
       this.stopHeartbeat();
 
-      // Mark session as crashed
-      if (this.sessionId) {
-        try {
-          const sessionRepo = getSessionRepository();
-          sessionRepo.markSessionCrashed(this.sessionId);
-        } catch {
-          // Ignore errors
-        }
+      // Unregister loop via ProcessRegistry (marks session crashed + deletes PID file)
+      if (this.sessionId && this.projectId) {
+        const processRegistry = getProcessRegistry();
+        processRegistry
+          .unregisterLoop(this.sessionId, this.projectId, false)
+          .catch(() => {
+            // Ignore errors during crash cleanup
+          });
       }
 
       this.process = null;
