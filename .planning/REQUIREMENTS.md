@@ -25,13 +25,13 @@ Requirements for this release. Each maps to roadmap phases.
 
 ### CLI Tool
 
-- [ ] **CLI-01**: `ralph status` shows all running loops system-wide with project, mode, runtime, cost
-- [ ] **CLI-02**: `ralph start <project> [mode]` starts a loop and confirms it's running
-- [ ] **CLI-03**: `ralph stop <project>` stops loop and verifies termination
-- [ ] **CLI-04**: `ralph stop --all` stops all running loops with confirmation
-- [ ] **CLI-05**: `ralph attach <project>` streams live output from running loop to terminal
-- [ ] **CLI-06**: `ralph list` shows all registered projects with path and status
-- [ ] **CLI-07**: `ralph logs <project>` tails recent log output
+- [x] **CLI-01**: `ralph status` shows all running loops system-wide with project, mode, runtime, cost
+- [x] **CLI-02**: `ralph start <project> [mode]` starts a loop and confirms it's running
+- [x] **CLI-03**: `ralph stop <project>` stops loop and verifies termination
+- [x] **CLI-04**: `ralph stop --all` stops all running loops with confirmation
+- [x] **CLI-05**: `ralph attach <project>` streams live output from running loop to terminal
+- [x] **CLI-06**: `ralph list` shows all registered projects with path and status
+- [x] **CLI-07**: `ralph logs <project>` tails recent log output
 
 ### Dashboard Fixes
 
@@ -93,13 +93,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LAUN-03 | Phase 4 | Pending |
 | LAUN-04 | Phase 4 | Pending |
 | LAUN-05 | Phase 4 | Pending |
-| CLI-01 | Phase 3 | Pending |
-| CLI-02 | Phase 3 | Pending |
-| CLI-03 | Phase 3 | Pending |
-| CLI-04 | Phase 3 | Pending |
-| CLI-05 | Phase 3 | Pending |
-| CLI-06 | Phase 3 | Pending |
-| CLI-07 | Phase 3 | Pending |
+| CLI-01 | Phase 3 | Complete |
+| CLI-02 | Phase 3 | Complete |
+| CLI-03 | Phase 3 | Complete |
+| CLI-04 | Phase 3 | Complete |
+| CLI-05 | Phase 3 | Complete |
+| CLI-06 | Phase 3 | Complete |
+| CLI-07 | Phase 3 | Complete |
 | DASH-01 | Phase 2 | Complete |
 | DASH-02 | Phase 2 | Complete |
 | DASH-03 | Phase 2 | Complete |

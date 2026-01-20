@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Process Foundation** - Central registry and reliable process lifecycle management
 - [x] **Phase 2: Dashboard Reliability** - Fix existing start/stop/task list/navigation issues
-- [ ] **Phase 3: CLI Core** - Terminal interface for loop control
+- [x] **Phase 3: CLI Core** - Terminal interface for loop control
 - [ ] **Phase 4: Launcher Hub** - Multi-project dashboard view
 - [ ] **Phase 5: Sub-agent Observability** - Track and display sub-agent spawning
 - [ ] **Phase 6: Scriptability** - Exit codes, JSON output, auto-stop, webhooks
@@ -70,9 +70,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — CLI scaffold, status and list commands (CLI-01, CLI-06)
-- [ ] 03-02-PLAN.md — Start and stop commands (CLI-02, CLI-03, CLI-04)
-- [ ] 03-03-PLAN.md — Attach and logs commands (CLI-05, CLI-07)
+- [x] 03-01-PLAN.md — CLI scaffold, status and list commands (CLI-01, CLI-06)
+- [x] 03-02-PLAN.md — Start and stop commands (CLI-02, CLI-03, CLI-04)
+- [x] 03-03-PLAN.md — Attach and logs commands (CLI-05, CLI-07)
 
 ### Phase 4: Launcher Hub
 **Goal**: User has a central dashboard view for all projects with live status
@@ -133,7 +133,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 |-------|----------------|--------|-----------|
 | 1. Process Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Dashboard Reliability | 4/4 | Complete | 2026-01-20 |
-| 3. CLI Core | 0/3 | Planned | - |
+| 3. CLI Core | 3/3 | Complete | 2026-01-20 |
 | 4. Launcher Hub | 0/3 | Not started | - |
 | 5. Sub-agent Observability | 0/3 | Not started | - |
 | 6. Scriptability | 0/3 | Not started | - |
