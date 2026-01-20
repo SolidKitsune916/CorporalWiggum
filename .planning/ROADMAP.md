@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Process Foundation** - Central registry and reliable process lifecycle management
 - [x] **Phase 2: Dashboard Reliability** - Fix existing start/stop/task list/navigation issues
 - [x] **Phase 3: CLI Core** - Terminal interface for loop control
-- [ ] **Phase 4: Launcher Hub** - Multi-project dashboard view
+- [x] **Phase 4: Launcher Hub** - Multi-project dashboard view
 - [ ] **Phase 5: Sub-agent Observability** - Track and display sub-agent spawning
 - [ ] **Phase 6: Scriptability** - Exit codes, JSON output, auto-stop, webhooks
 
@@ -87,9 +87,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Extend LauncherInstance with session metrics (LAUN-02, LAUN-05 backend)
-- [ ] 04-02-PLAN.md — LauncherContext and GlobalHeader (LAUN-04)
-- [ ] 04-03-PLAN.md — Enhanced ProjectCard with elapsed time and cost (LAUN-02, LAUN-05 frontend)
+- [x] 04-01-PLAN.md — Extend LauncherInstance with session metrics (LAUN-02, LAUN-05 backend)
+- [x] 04-02-PLAN.md — LauncherContext and GlobalHeader (LAUN-04)
+- [x] 04-03-PLAN.md — Enhanced ProjectCard with elapsed time and cost (LAUN-02, LAUN-05 frontend)
 
 ### Phase 5: Sub-agent Observability
 **Goal**: User can see sub-agent spawning behavior and costs per session
@@ -134,7 +134,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 | 1. Process Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Dashboard Reliability | 4/4 | Complete | 2026-01-20 |
 | 3. CLI Core | 3/3 | Complete | 2026-01-20 |
-| 4. Launcher Hub | 0/3 | Planned | - |
+| 4. Launcher Hub | 3/3 | Complete | 2026-01-20 |
 | 5. Sub-agent Observability | 0/3 | Not started | - |
 | 6. Scriptability | 0/3 | Not started | - |
 

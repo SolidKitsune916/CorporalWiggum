@@ -17,11 +17,11 @@ Requirements for this release. Each maps to roadmap phases.
 
 ### Launcher Page
 
-- [ ] **LAUN-01**: Dedicated launcher view shows all registered projects with their current status
-- [ ] **LAUN-02**: Each project card shows real-time status (running/stopped/error) with live updates
-- [ ] **LAUN-03**: Start/stop buttons per project with immediate visual feedback
-- [ ] **LAUN-04**: Global header shows count of active loops (visible from any page)
-- [ ] **LAUN-05**: Running projects show elapsed time and cost spent
+- [x] **LAUN-01**: Dedicated launcher view shows all registered projects with their current status
+- [x] **LAUN-02**: Each project card shows real-time status (running/stopped/error) with live updates
+- [x] **LAUN-03**: Start/stop buttons per project with immediate visual feedback
+- [x] **LAUN-04**: Global header shows count of active loops (visible from any page)
+- [x] **LAUN-05**: Running projects show elapsed time and cost spent
 
 ### CLI Tool
 
@@ -88,11 +88,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROC-03 | Phase 1 | Complete |
 | PROC-04 | Phase 1 | Complete |
 | PROC-05 | Phase 1 | Complete |
-| LAUN-01 | Phase 4 | Pending |
-| LAUN-02 | Phase 4 | Pending |
-| LAUN-03 | Phase 4 | Pending |
-| LAUN-04 | Phase 4 | Pending |
-| LAUN-05 | Phase 4 | Pending |
+| LAUN-01 | Phase 4 | Complete |
+| LAUN-02 | Phase 4 | Complete |
+| LAUN-03 | Phase 4 | Complete |
+| LAUN-04 | Phase 4 | Complete |
+| LAUN-05 | Phase 4 | Complete |
 | CLI-01 | Phase 3 | Complete |
 | CLI-02 | Phase 3 | Complete |
 | CLI-03 | Phase 3 | Complete |
