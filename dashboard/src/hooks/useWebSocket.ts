@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode, ReviewRunnerStatus, ReviewConfig, ReviewResult, PortProcess, LogSession, PrdJson, PRDSession, PRDVersionHistory, CodebaseAnalysis, PRDQuestion, PRDInterviewPhase, PRDVersion, ExternalRepoReference, RepoCacheStatus, FetchedRepoContent, GitHubMcpConfig, RepoCacheStats } from '@/types';
+import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode, WorkflowMode, ReviewRunnerStatus, ReviewConfig, ReviewResult, PortProcess, LogSession, PrdJson, PRDSession, PRDVersionHistory, CodebaseAnalysis, PRDQuestion, PRDInterviewPhase, PRDVersion, ExternalRepoReference, RepoCacheStatus, FetchedRepoContent, GitHubMcpConfig, RepoCacheStats, SubAgentTelemetry } from '@/types';
 
 interface UseWebSocketReturn {
   connected: boolean;
@@ -172,6 +172,8 @@ interface UseWebSocketReturn {
   getExternalReposCacheStats: () => void;
   externalReposUrlValidation: { valid: boolean; error?: string; defaultBranch?: string } | null;
   clearExternalReposUrlValidation: () => void;
+  // Sub-agent telemetry state
+  subAgentTelemetry: SubAgentTelemetry | null;
 }
 
 const DEFAULT_LOOP_STATUS: LoopStatus = {
@@ -326,6 +328,9 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
   const [externalReposError, setExternalReposError] = useState<string | null>(null);
   const [externalReposUrlValidation, setExternalReposUrlValidation] = useState<{ valid: boolean; error?: string; defaultBranch?: string } | null>(null);
 
+  // Sub-agent telemetry state
+  const [subAgentTelemetry, setSubAgentTelemetry] = useState<SubAgentTelemetry | null>(null);
+
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCleaningUpRef = useRef(false);
@@ -446,6 +451,9 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     setExternalReposError(null);
     setExternalReposUrlValidation(null);
 
+    // Reset sub-agent telemetry state
+    setSubAgentTelemetry(null);
+
     // Reset the previous loop running ref to prevent false toast on reconnection
     prevLoopRunningRef.current = false;
 
@@ -522,6 +530,8 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
               toast.info('Loop stopped', {
                 description: `Completed ${newStatus.iteration} iteration(s)`,
               });
+              // Reset sub-agent telemetry when loop stops
+              setSubAgentTelemetry(null);
             }
             break;
           }
@@ -1095,6 +1105,21 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
               description: (message.payload as { error: string }).error,
             });
             break;
+
+          // Sub-agent telemetry messages
+          case 'subagent:status':
+            setSubAgentTelemetry(message.payload as SubAgentTelemetry);
+            break;
+
+          case 'subagent:warning': {
+            const warning = message.payload as { level: string; message: string; iteration: number; count: number };
+            if (warning.level === 'critical') {
+              toast.error(warning.message);
+            } else {
+              toast.warning(warning.message);
+            }
+            break;
+          }
         }
       } catch {
         console.error('Failed to parse WebSocket message');
@@ -1738,5 +1763,7 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     getExternalReposCacheStats,
     externalReposUrlValidation,
     clearExternalReposUrlValidation,
+    // Sub-agent telemetry
+    subAgentTelemetry,
   };
 }
