@@ -11,6 +11,8 @@ import path from 'path';
 import { getDb, getRalphDir } from '../lib/database.js';
 import { colors, tableHeader, tableRow, emptyState } from '../lib/output.js';
 import { formatDuration, formatCost, formatStatus } from '../lib/format.js';
+import { EXIT_CODES } from '../lib/exit-codes.js';
+import { outputJson, outputJsonError } from '../lib/json-output.js';
 
 /**
  * LoopMode type (matches dashboard/src/types/index.ts)
@@ -139,9 +141,24 @@ async function listPidFiles(): Promise<PidFileContent[]> {
   return pidFiles;
 }
 
+/**
+ * JSON output structure for status command
+ */
+interface StatusJsonOutput {
+  projectId: string;
+  mode: LoopMode;
+  pid: number;
+  startedAt: string;
+  runtimeMs: number;
+  cost: number;
+  iteration: number;
+  isAlive: boolean;
+}
+
 export const statusCommand = new Command('status')
   .description('Show all running loops system-wide')
-  .action(async () => {
+  .option('-j, --json', 'Output in JSON format')
+  .action(async (options: { json?: boolean }) => {
     try {
       // Get active loops from database
       const loops = getActiveLoops();
@@ -169,9 +186,27 @@ export const statusCommand = new Command('status')
 
       const allLoops = [...loops, ...orphans];
 
+      // JSON output mode
+      if (options.json) {
+        const now = Date.now();
+        const jsonData: StatusJsonOutput[] = allLoops.map((loop) => ({
+          projectId: loop.projectId,
+          mode: loop.mode,
+          pid: loop.pid,
+          startedAt: loop.startedAt,
+          runtimeMs: now - new Date(loop.startedAt).getTime(),
+          cost: loop.costSpent,
+          iteration: loop.iteration,
+          isAlive: loop.isAlive,
+        }));
+        outputJson(jsonData);
+        process.exit(EXIT_CODES.SUCCESS);
+      }
+
+      // Human-readable output
       if (allLoops.length === 0) {
         emptyState('No running loops', 'Start a loop from the dashboard or with ralph start <project>');
-        return;
+        process.exit(EXIT_CODES.SUCCESS);
       }
 
       // Print table
@@ -208,8 +243,13 @@ export const statusCommand = new Command('status')
           `${alive} running${dead > 0 ? `, ${dead} dead (run ralph cleanup to remove stale entries)` : ''}`
         )
       );
+      process.exit(EXIT_CODES.SUCCESS);
     } catch (err) {
+      if (options.json) {
+        outputJsonError((err as Error).message);
+        process.exit(EXIT_CODES.GENERAL_ERROR);
+      }
       console.error(colors.error(`Error: ${(err as Error).message}`));
-      process.exit(1);
+      process.exit(EXIT_CODES.GENERAL_ERROR);
     }
   });

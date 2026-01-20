@@ -9,6 +9,8 @@ import { Command } from 'commander';
 import { getDb } from '../lib/database.js';
 import { colors, tableHeader, tableRow, emptyState } from '../lib/output.js';
 import { truncatePath } from '../lib/format.js';
+import { EXIT_CODES } from '../lib/exit-codes.js';
+import { outputJson, outputJsonError } from '../lib/json-output.js';
 
 /**
  * Project row from database
@@ -57,19 +59,47 @@ function getRunningProjectIds(): Set<string> {
   return new Set(rows.map((r) => r.project_id));
 }
 
+/**
+ * JSON output structure for list command
+ */
+interface ProjectJsonOutput {
+  id: string;
+  name: string;
+  path: string;
+  status: 'running' | 'idle';
+  addedAt: string;
+  lastOpened: string | null;
+}
+
 export const listCommand = new Command('list')
   .description('Show all registered projects')
-  .action(async () => {
+  .option('-j, --json', 'Output in JSON format')
+  .action(async (options: { json?: boolean }) => {
     try {
       const projects = listProjects();
       const runningIds = getRunningProjectIds();
 
+      // JSON output mode
+      if (options.json) {
+        const jsonData: ProjectJsonOutput[] = projects.map((project) => ({
+          id: project.id,
+          name: project.name,
+          path: project.path,
+          status: runningIds.has(project.id) ? 'running' : 'idle',
+          addedAt: project.added_at,
+          lastOpened: project.last_opened,
+        }));
+        outputJson(jsonData);
+        process.exit(EXIT_CODES.SUCCESS);
+      }
+
+      // Human-readable output
       if (projects.length === 0) {
         emptyState(
           'No projects registered',
           'Add projects via the dashboard or with ralph add <path>'
         );
-        return;
+        process.exit(EXIT_CODES.SUCCESS);
       }
 
       // Print table
@@ -104,8 +134,13 @@ export const listCommand = new Command('list')
           }`
         )
       );
+      process.exit(EXIT_CODES.SUCCESS);
     } catch (err) {
+      if (options.json) {
+        outputJsonError((err as Error).message);
+        process.exit(EXIT_CODES.GENERAL_ERROR);
+      }
       console.error(colors.error(`Error: ${(err as Error).message}`));
-      process.exit(1);
+      process.exit(EXIT_CODES.GENERAL_ERROR);
     }
   });
