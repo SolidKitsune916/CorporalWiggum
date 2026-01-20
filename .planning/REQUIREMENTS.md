@@ -35,10 +35,10 @@ Requirements for this release. Each maps to roadmap phases.
 
 ### Dashboard Fixes
 
-- [ ] **DASH-01**: Loop start reliably spawns process and confirms it's running
-- [ ] **DASH-02**: Loop stop reliably kills process and updates UI to reflect stopped state
-- [ ] **DASH-03**: Task list updates when IMPLEMENTATION_PLAN.md changes
-- [ ] **DASH-04**: Project switching navigates correctly and loads correct project context
+- [x] **DASH-01**: Loop start reliably spawns process and confirms it's running
+- [x] **DASH-02**: Loop stop reliably kills process and updates UI to reflect stopped state
+- [x] **DASH-03**: Task list updates when IMPLEMENTATION_PLAN.md changes
+- [x] **DASH-04**: Project switching navigates correctly and loads correct project context
 
 ### Sub-agent Observability
 
@@ -100,10 +100,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLI-05 | Phase 3 | Pending |
 | CLI-06 | Phase 3 | Pending |
 | CLI-07 | Phase 3 | Pending |
-| DASH-01 | Phase 2 | Pending |
-| DASH-02 | Phase 2 | Pending |
-| DASH-03 | Phase 2 | Pending |
-| DASH-04 | Phase 2 | Pending |
+| DASH-01 | Phase 2 | Complete |
+| DASH-02 | Phase 2 | Complete |
+| DASH-03 | Phase 2 | Complete |
+| DASH-04 | Phase 2 | Complete |
 | OBSV-01 | Phase 5 | Pending |
 | OBSV-02 | Phase 5 | Pending |
 | OBSV-03 | Phase 5 | Pending |

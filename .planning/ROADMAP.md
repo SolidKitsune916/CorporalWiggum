@@ -13,7 +13,7 @@ This roadmap transforms Ralph Wiggum from a single-project dashboard with reliab
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Process Foundation** - Central registry and reliable process lifecycle management
-- [ ] **Phase 2: Dashboard Reliability** - Fix existing start/stop/task list/navigation issues
+- [x] **Phase 2: Dashboard Reliability** - Fix existing start/stop/task list/navigation issues
 - [ ] **Phase 3: CLI Core** - Terminal interface for loop control
 - [ ] **Phase 4: Launcher Hub** - Multi-project dashboard view
 - [ ] **Phase 5: Sub-agent Observability** - Track and display sub-agent spawning
@@ -50,10 +50,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Start/stop intermediate UI states (DASH-01, DASH-02)
-- [ ] 02-02-PLAN.md — Task list file watching reliability (DASH-03)
-- [ ] 02-03-PLAN.md — Project switching context reset (DASH-04)
-- [ ] 02-04-PLAN.md — Integrated verification checkpoint
+- [x] 02-01-PLAN.md — Start/stop intermediate UI states (DASH-01, DASH-02)
+- [x] 02-02-PLAN.md — Task list file watching reliability (DASH-03)
+- [x] 02-03-PLAN.md — Project switching context reset (DASH-04)
+- [x] 02-04-PLAN.md — Integrated verification checkpoint
 
 ### Phase 3: CLI Core
 **Goal**: User can control loops from terminal without opening dashboard
@@ -132,7 +132,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Process Foundation | 3/3 | Complete | 2026-01-19 |
-| 2. Dashboard Reliability | 0/4 | Planned | - |
+| 2. Dashboard Reliability | 4/4 | Complete | 2026-01-20 |
 | 3. CLI Core | 0/3 | Not started | - |
 | 4. Launcher Hub | 0/3 | Not started | - |
 | 5. Sub-agent Observability | 0/3 | Not started | - |
