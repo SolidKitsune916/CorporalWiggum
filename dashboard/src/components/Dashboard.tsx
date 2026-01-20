@@ -309,6 +309,17 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
   return (
     <div className="min-h-screen bg-background" id="main-content" role="main">
+      {/* Connection Status Banner - shown when WebSocket is reconnecting after project switch */}
+      {!connected && (
+        <div
+          className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/90 text-yellow-950 text-center py-1 text-sm font-medium"
+          role="status"
+          aria-live="polite"
+        >
+          Connecting to project server...
+        </div>
+      )}
+
       {/* Header */}
       <header className="border-b bg-card px-6 py-4" role="banner">
         <div className="flex items-center justify-between">
