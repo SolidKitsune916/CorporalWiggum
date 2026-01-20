@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
-import { spawn, ChildProcess, exec } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import type { LoopStatus, LoopMode, LogEntry } from '../src/types';
 import { getSessionRepository, type ActiveSession } from './database/repositories/SessionRepository.js';
 import { getExecutionHistoryRepository } from './database/repositories/ExecutionHistoryRepository.js';
-import { getProcessRegistry } from './processManager/index.js';
+import { getProcessRegistry, GracefulShutdown } from './processManager/index.js';
 
 // Heartbeat interval in milliseconds
 const HEARTBEAT_INTERVAL_MS = 5000;
@@ -54,6 +54,7 @@ export class LoopController extends EventEmitter {
     iteration: 0,
     maxIterations: 0,
   };
+  private gracefulShutdown = new GracefulShutdown();
 
   constructor(projectPath: string, ralphPath?: string) {
     super();
@@ -421,13 +422,18 @@ export class LoopController extends EventEmitter {
     });
   }
 
-  stop() {
+  async stop(): Promise<void> {
     if (!this.process) {
       this.emitLog('No loop running', 'warning');
       return;
     }
 
     const pid = this.process.pid;
+    if (!pid) {
+      this.emitLog('Process has no PID', 'warning');
+      return;
+    }
+
     this.emitLog('Stopping loop...', 'info');
 
     // Mark session as stopping
@@ -440,34 +446,23 @@ export class LoopController extends EventEmitter {
       }
     }
 
-    const isWindows = process.platform === 'win32';
+    // Use GracefulShutdown for verified termination
+    const result = await this.gracefulShutdown.stopAndVerify(pid);
 
-    if (isWindows && pid) {
-      // On Windows, use taskkill to kill the process tree (includes child processes)
-      // This is more reliable than signals for Git Bash processes
-      exec(`taskkill /pid ${pid} /T /F`, (err: Error | null) => {
-        if (err) {
-          this.emitLog(`Failed to kill process tree: ${err.message}`, 'warning');
-          // Fallback to regular kill
-          if (this.process) {
-            this.process.kill();
-          }
-        } else {
-          this.emitLog('Process tree terminated', 'info');
-        }
-      });
+    if (result.success) {
+      this.emitLog(
+        `Loop stopped via ${result.method} (${result.durationMs}ms)`,
+        'success'
+      );
     } else {
-      // On Unix, send SIGINT for graceful shutdown
-      this.process.kill('SIGINT');
-
-      // Force kill after 5 seconds if still running
-      setTimeout(() => {
-        if (this.process) {
-          this.emitLog('Force killing loop...', 'warning');
-          this.process.kill('SIGKILL');
-        }
-      }, 5000);
+      this.emitLog(
+        `Failed to stop loop after ${result.durationMs}ms`,
+        'error'
+      );
     }
+
+    // Cleanup will happen in the 'close' event handler
+    // The 'close' handler will still run and do cleanup
   }
 
   /**
