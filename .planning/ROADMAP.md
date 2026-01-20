@@ -67,12 +67,12 @@ Plans:
   5. `ralph attach <project>` streams live output to terminal
   6. `ralph list` shows all registered projects
   7. `ralph logs <project>` tails recent log output
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: CLI scaffold and project/status commands
-- [ ] 03-02: Start and stop commands
-- [ ] 03-03: Attach and logs commands
+- [ ] 03-01-PLAN.md — CLI scaffold, status and list commands (CLI-01, CLI-06)
+- [ ] 03-02-PLAN.md — Start and stop commands (CLI-02, CLI-03, CLI-04)
+- [ ] 03-03-PLAN.md — Attach and logs commands (CLI-05, CLI-07)
 
 ### Phase 4: Launcher Hub
 **Goal**: User has a central dashboard view for all projects with live status
@@ -133,7 +133,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 |-------|----------------|--------|-----------|
 | 1. Process Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Dashboard Reliability | 4/4 | Complete | 2026-01-20 |
-| 3. CLI Core | 0/3 | Not started | - |
+| 3. CLI Core | 0/3 | Planned | - |
 | 4. Launcher Hub | 0/3 | Not started | - |
 | 5. Sub-agent Observability | 0/3 | Not started | - |
 | 6. Scriptability | 0/3 | Not started | - |
@@ -142,3 +142,4 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 *Roadmap created: 2026-01-19*
 *Phase 1 planned: 2026-01-19*
 *Phase 2 planned: 2026-01-19*
+*Phase 3 planned: 2026-01-20*
