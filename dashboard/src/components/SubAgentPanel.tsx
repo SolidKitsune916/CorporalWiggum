@@ -1,36 +1,94 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, DollarSign, Clock } from 'lucide-react';
+import { Users, DollarSign, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { SubAgentTelemetry } from '@/types';
+
+interface SessionSummary {
+  total: number;
+  estimatedCost: number;
+  iterations: number;
+  peakIteration?: { iteration: number; count: number };
+}
 
 interface SubAgentPanelProps {
   telemetry: SubAgentTelemetry | null;
   isRunning: boolean;
-  warningThreshold?: number;  // Default: 20 per session
+  warningThreshold?: number;
+  sessionSummary?: SessionSummary | null;
 }
 
-// Default cost estimate per sub-agent spawn (based on research)
-const DEFAULT_COST_PER_AGENT = 0.02;  // $0.02 per sub-agent
+const DEFAULT_COST_PER_AGENT = 0.02;
 
 export function SubAgentPanel({
   telemetry,
   isRunning,
   warningThreshold = 20,
+  sessionSummary,
 }: SubAgentPanelProps) {
-  // Don't render if no telemetry and loop not running
-  if (!telemetry && !isRunning) {
+  // Show session summary after loop completes
+  const showSummary = !isRunning && sessionSummary && sessionSummary.total > 0;
+
+  // Show live telemetry during running loop
+  const showLiveTelemetry = isRunning && telemetry;
+
+  // Don't render if nothing to show
+  if (!showLiveTelemetry && !showSummary) {
     return null;
   }
 
+  // Session summary view (after loop completes)
+  if (showSummary) {
+    return (
+      <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            Session Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Total Sub-agents</span>
+            <span className="font-mono font-semibold">{sessionSummary.total}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <DollarSign className="h-4 w-4" />
+              Est. Cost
+            </span>
+            <span className="font-mono text-sm">
+              ${sessionSummary.estimatedCost.toFixed(4)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Iterations</span>
+            <span className="font-mono text-sm">{sessionSummary.iterations}</span>
+          </div>
+
+          {sessionSummary.peakIteration && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Peak</span>
+              <Badge variant="secondary" className="font-mono text-xs">
+                Iter #{sessionSummary.peakIteration.iteration}: {sessionSummary.peakIteration.count}
+              </Badge>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Live telemetry view (during running loop)
   const sessionTotal = telemetry?.sessionTotal ?? 0;
   const estimatedCost = telemetry?.estimatedCost ?? (sessionTotal * DEFAULT_COST_PER_AGENT);
   const isWarning = sessionTotal >= warningThreshold;
 
-  // Format iteration breakdown for display
   const iterationBreakdown = telemetry?.iterationCounts
     ? Object.entries(telemetry.iterationCounts)
         .sort(([a], [b]) => Number(a) - Number(b))
-        .slice(-5)  // Show last 5 iterations
+        .slice(-5)
     : [];
 
   return (
@@ -41,32 +99,26 @@ export function SubAgentPanel({
           Sub-agents
           {isWarning && (
             <Badge variant="outline" className="ml-2 border-yellow-500 text-yellow-600 dark:text-yellow-400">
+              <AlertTriangle className="h-3 w-3 mr-1" />
               High Usage
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Session Total */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Session Total</span>
-          <span className="font-mono font-semibold text-lg">
-            {sessionTotal}
-          </span>
+          <span className="font-mono font-semibold text-lg">{sessionTotal}</span>
         </div>
 
-        {/* Estimated Cost */}
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
             <DollarSign className="h-4 w-4" />
             Est. Cost
           </span>
-          <span className="font-mono text-sm">
-            ${estimatedCost.toFixed(4)}
-          </span>
+          <span className="font-mono text-sm">${estimatedCost.toFixed(4)}</span>
         </div>
 
-        {/* Last Spawn Time */}
         {telemetry?.lastSpawnAt && (
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -79,7 +131,6 @@ export function SubAgentPanel({
           </div>
         )}
 
-        {/* Iteration Breakdown (if any spawns) */}
         {iterationBreakdown.length > 0 && (
           <div className="pt-2 border-t">
             <span className="text-xs text-muted-foreground">Recent Iterations</span>
@@ -97,7 +148,6 @@ export function SubAgentPanel({
           </div>
         )}
 
-        {/* No sub-agents message */}
         {isRunning && sessionTotal === 0 && (
           <p className="text-sm text-muted-foreground text-center py-2">
             No sub-agents spawned yet

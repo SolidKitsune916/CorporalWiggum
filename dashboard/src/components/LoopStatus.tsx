@@ -1,8 +1,16 @@
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { LoopStatus as LoopStatusType, SubAgentTelemetry } from '@/types';
 import { Play, Pause, Clock, Hash, Target } from 'lucide-react';
 import { SubAgentPanel } from './SubAgentPanel';
+
+interface SessionSummary {
+  total: number;
+  estimatedCost: number;
+  iterations: number;
+  peakIteration?: { iteration: number; count: number };
+}
 
 interface LoopStatusProps {
   status: LoopStatusType;
@@ -10,6 +18,45 @@ interface LoopStatusProps {
 }
 
 export function LoopStatus({ status, subAgentTelemetry }: LoopStatusProps) {
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
+  const prevRunningRef = useRef<boolean>(status.running);
+
+  // Track session summary when loop stops
+  useEffect(() => {
+    const wasRunning = prevRunningRef.current;
+    const isRunning = status.running;
+
+    // Update ref for next render
+    prevRunningRef.current = isRunning;
+
+    // Transition from running to stopped: create summary
+    if (wasRunning && !isRunning && subAgentTelemetry && subAgentTelemetry.sessionTotal > 0) {
+      // Calculate peak iteration
+      let peakIter: { iteration: number; count: number } | undefined;
+      if (subAgentTelemetry.iterationCounts) {
+        const entries = Object.entries(subAgentTelemetry.iterationCounts);
+        if (entries.length > 0) {
+          const peak = entries.reduce((max, [iter, count]) =>
+            Number(count) > Number(max[1]) ? [iter, count] : max
+          );
+          peakIter = { iteration: Number(peak[0]), count: Number(peak[1]) };
+        }
+      }
+
+      setSessionSummary({
+        total: subAgentTelemetry.sessionTotal,
+        estimatedCost: subAgentTelemetry.estimatedCost,
+        iterations: Object.keys(subAgentTelemetry.iterationCounts || {}).length,
+        peakIteration: peakIter,
+      });
+    }
+
+    // Transition from stopped to running: clear summary
+    if (!wasRunning && isRunning) {
+      setSessionSummary(null);
+    }
+  }, [status.running, subAgentTelemetry]);
+
   const formatDuration = (startedAt?: Date) => {
     if (!startedAt) return '-';
     const now = new Date();
@@ -89,15 +136,14 @@ export function LoopStatus({ status, subAgentTelemetry }: LoopStatusProps) {
           )}
         </CardContent>
       </Card>
-      {/* Sub-agent Telemetry Panel */}
-      {status.running && (
-        <div className="mt-4">
-          <SubAgentPanel
-            telemetry={subAgentTelemetry ?? null}
-            isRunning={status.running}
-          />
-        </div>
-      )}
+      {/* Sub-agent Telemetry Panel - show during running or after with summary */}
+      <div className="mt-4">
+        <SubAgentPanel
+          telemetry={subAgentTelemetry ?? null}
+          isRunning={status.running}
+          sessionSummary={sessionSummary}
+        />
+      </div>
     </>
   );
 }
