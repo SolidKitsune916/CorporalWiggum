@@ -2,6 +2,7 @@ import './index.css'
 import { Dashboard } from './components/Dashboard'
 import { LauncherHome } from './components/launcher/LauncherHome'
 import { AccessibilityProvider } from './components/AccessibilityProvider'
+import { LauncherProvider } from './contexts/LauncherContext'
 import { Toaster } from './components/ui/toaster'
 
 /**
@@ -24,8 +25,10 @@ function App() {
   if (mode === 'launcher') {
     return (
       <AccessibilityProvider>
-        <LauncherHome />
-        <Toaster />
+        <LauncherProvider>
+          <LauncherHome />
+          <Toaster />
+        </LauncherProvider>
       </AccessibilityProvider>
     )
   }
@@ -33,8 +36,10 @@ function App() {
   // Pass custom backend port if specified (for multi-instance support)
   return (
     <AccessibilityProvider>
-      <Dashboard backendPort={backendPort ? parseInt(backendPort, 10) : undefined} />
-      <Toaster />
+      <LauncherProvider>
+        <Dashboard backendPort={backendPort ? parseInt(backendPort, 10) : undefined} />
+        <Toaster />
+      </LauncherProvider>
     </AccessibilityProvider>
   )
 }
