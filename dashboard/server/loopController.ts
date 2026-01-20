@@ -11,6 +11,11 @@ import { parseSubAgentSpawn } from './lib/subAgentParser.js';
 // Heartbeat interval in milliseconds
 const HEARTBEAT_INTERVAL_MS = 5000;
 
+// Sub-agent threshold defaults
+const DEFAULT_SUBAGENT_WARNING_THRESHOLD = 5;     // Per iteration
+const DEFAULT_SUBAGENT_CRITICAL_THRESHOLD = 10;   // Per iteration
+const DEFAULT_SESSION_WARNING_THRESHOLD = 20;     // Total session
+
 // Find bash executable on Windows
 function findBashOnWindows(): string | null {
   const possiblePaths = [
@@ -62,6 +67,13 @@ export class LoopController extends EventEmitter {
   private iterationSubAgentCounts: Map<number, number> = new Map();
   private lastSubAgentSpawnAt: Date | null = null;
   private seenToolUseIds: Set<string> = new Set(); // Prevent double-counting
+
+  // Sub-agent threshold configuration
+  private subAgentWarningThreshold = DEFAULT_SUBAGENT_WARNING_THRESHOLD;
+  private subAgentCriticalThreshold = DEFAULT_SUBAGENT_CRITICAL_THRESHOLD;
+  private sessionWarningThreshold = DEFAULT_SESSION_WARNING_THRESHOLD;
+  private sessionWarningEmitted = false;  // Track if session warning already sent
+  private iterationWarningsEmitted: Set<number> = new Set();  // Track per-iteration warnings
 
   constructor(projectPath: string, ralphPath?: string) {
     super();
@@ -249,6 +261,8 @@ export class LoopController extends EventEmitter {
     this.iterationSubAgentCounts.clear();
     this.lastSubAgentSpawnAt = null;
     this.seenToolUseIds.clear();
+    this.sessionWarningEmitted = false;
+    this.iterationWarningsEmitted.clear();
 
     // Register loop with ProcessRegistry (creates session + PID file)
     if (this.projectId && pid) {
@@ -606,6 +620,9 @@ export class LoopController extends EventEmitter {
     });
 
     this.emitLog(`Sub-agent spawned (total: ${this.subAgentCount}, iteration: ${iterCount})`, 'info');
+
+    // Check thresholds after incrementing count
+    this.checkSubAgentThresholds();
   }
 
   /**
@@ -617,5 +634,69 @@ export class LoopController extends EventEmitter {
       iterationCounts: Object.fromEntries(this.iterationSubAgentCounts),
       lastSpawnAt: this.lastSubAgentSpawnAt,
     };
+  }
+
+  /**
+   * Check sub-agent thresholds and emit warnings if exceeded
+   */
+  private checkSubAgentThresholds(): void {
+    const currentIter = this.status.iteration;
+    const iterCount = this.iterationSubAgentCounts.get(currentIter) || 0;
+
+    // Per-iteration threshold check (only warn once per iteration per threshold level)
+    if (iterCount >= this.subAgentCriticalThreshold) {
+      if (!this.iterationWarningsEmitted.has(currentIter * 1000 + 2)) {  // 2 = critical
+        this.iterationWarningsEmitted.add(currentIter * 1000 + 2);
+        this.emit('subagent:warning', {
+          level: 'critical',
+          message: `Critical: Iteration ${currentIter} spawned ${iterCount} sub-agents (threshold: ${this.subAgentCriticalThreshold})`,
+          iteration: currentIter,
+          count: iterCount,
+        });
+        this.emitLog(`CRITICAL: High sub-agent count in iteration ${currentIter}: ${iterCount}`, 'warning');
+      }
+    } else if (iterCount >= this.subAgentWarningThreshold) {
+      if (!this.iterationWarningsEmitted.has(currentIter * 1000 + 1)) {  // 1 = warning
+        this.iterationWarningsEmitted.add(currentIter * 1000 + 1);
+        this.emit('subagent:warning', {
+          level: 'warning',
+          message: `Warning: Iteration ${currentIter} spawned ${iterCount} sub-agents (threshold: ${this.subAgentWarningThreshold})`,
+          iteration: currentIter,
+          count: iterCount,
+        });
+        this.emitLog(`Warning: High sub-agent count in iteration ${currentIter}: ${iterCount}`, 'warning');
+      }
+    }
+
+    // Session-level threshold check (only warn once)
+    if (!this.sessionWarningEmitted && this.subAgentCount >= this.sessionWarningThreshold) {
+      this.sessionWarningEmitted = true;
+      this.emit('subagent:warning', {
+        level: 'warning',
+        message: `Session has spawned ${this.subAgentCount} sub-agents (threshold: ${this.sessionWarningThreshold})`,
+        iteration: currentIter,
+        count: this.subAgentCount,
+      });
+      this.emitLog(`Warning: Session sub-agent count reached ${this.subAgentCount}`, 'warning');
+    }
+  }
+
+  /**
+   * Configure sub-agent thresholds
+   */
+  setSubAgentThresholds(config: {
+    warningThreshold?: number;
+    criticalThreshold?: number;
+    sessionWarningThreshold?: number;
+  }): void {
+    if (config.warningThreshold !== undefined) {
+      this.subAgentWarningThreshold = config.warningThreshold;
+    }
+    if (config.criticalThreshold !== undefined) {
+      this.subAgentCriticalThreshold = config.criticalThreshold;
+    }
+    if (config.sessionWarningThreshold !== undefined) {
+      this.sessionWarningThreshold = config.sessionWarningThreshold;
+    }
   }
 }
