@@ -83,41 +83,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROC-01 | TBD | Pending |
-| PROC-02 | TBD | Pending |
-| PROC-03 | TBD | Pending |
-| PROC-04 | TBD | Pending |
-| PROC-05 | TBD | Pending |
-| LAUN-01 | TBD | Pending |
-| LAUN-02 | TBD | Pending |
-| LAUN-03 | TBD | Pending |
-| LAUN-04 | TBD | Pending |
-| LAUN-05 | TBD | Pending |
-| CLI-01 | TBD | Pending |
-| CLI-02 | TBD | Pending |
-| CLI-03 | TBD | Pending |
-| CLI-04 | TBD | Pending |
-| CLI-05 | TBD | Pending |
-| CLI-06 | TBD | Pending |
-| CLI-07 | TBD | Pending |
-| DASH-01 | TBD | Pending |
-| DASH-02 | TBD | Pending |
-| DASH-03 | TBD | Pending |
-| DASH-04 | TBD | Pending |
-| OBSV-01 | TBD | Pending |
-| OBSV-02 | TBD | Pending |
-| OBSV-03 | TBD | Pending |
-| OBSV-04 | TBD | Pending |
-| SCRP-01 | TBD | Pending |
-| SCRP-02 | TBD | Pending |
-| SCRP-03 | TBD | Pending |
-| SCRP-04 | TBD | Pending |
+| PROC-01 | Phase 1 | Pending |
+| PROC-02 | Phase 1 | Pending |
+| PROC-03 | Phase 1 | Pending |
+| PROC-04 | Phase 1 | Pending |
+| PROC-05 | Phase 1 | Pending |
+| LAUN-01 | Phase 4 | Pending |
+| LAUN-02 | Phase 4 | Pending |
+| LAUN-03 | Phase 4 | Pending |
+| LAUN-04 | Phase 4 | Pending |
+| LAUN-05 | Phase 4 | Pending |
+| CLI-01 | Phase 3 | Pending |
+| CLI-02 | Phase 3 | Pending |
+| CLI-03 | Phase 3 | Pending |
+| CLI-04 | Phase 3 | Pending |
+| CLI-05 | Phase 3 | Pending |
+| CLI-06 | Phase 3 | Pending |
+| CLI-07 | Phase 3 | Pending |
+| DASH-01 | Phase 2 | Pending |
+| DASH-02 | Phase 2 | Pending |
+| DASH-03 | Phase 2 | Pending |
+| DASH-04 | Phase 2 | Pending |
+| OBSV-01 | Phase 5 | Pending |
+| OBSV-02 | Phase 5 | Pending |
+| OBSV-03 | Phase 5 | Pending |
+| OBSV-04 | Phase 5 | Pending |
+| SCRP-01 | Phase 6 | Pending |
+| SCRP-02 | Phase 6 | Pending |
+| SCRP-03 | Phase 6 | Pending |
+| SCRP-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 29 total
-- Mapped to phases: 0
-- Unmapped: 29 ⚠️
+- Mapped to phases: 29
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after initial definition*
+*Last updated: 2026-01-19 — traceability updated with phase mappings*
