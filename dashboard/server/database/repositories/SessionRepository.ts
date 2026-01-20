@@ -31,6 +31,7 @@ export interface ActiveSession {
   loopDetected: boolean;
   backoffSeconds: number;
   metadata: Record<string, unknown> | null;
+  subAgentCount: number;
 }
 
 interface SessionRow {
@@ -54,6 +55,7 @@ interface SessionRow {
   loop_detected: number;
   backoff_seconds: number;
   metadata_json: string | null;
+  sub_agent_count: number;
 }
 
 export interface CreateSessionInput {
@@ -355,6 +357,37 @@ export class SessionRepository {
   }
 
   /**
+   * Increment sub-agent count for a session
+   */
+  updateSubAgentCount(sessionId: string, count: number = 1): void {
+    const db = getDb();
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE active_sessions
+      SET sub_agent_count = sub_agent_count + ?,
+          last_heartbeat = ?
+      WHERE id = ?
+    `).run(count, now, sessionId);
+  }
+
+  /**
+   * Get current sub-agent count for a session
+   */
+  getSubAgentCount(sessionId: string): number {
+    const db = getDb();
+    const row = db.prepare('SELECT sub_agent_count FROM active_sessions WHERE id = ?')
+      .get(sessionId) as { sub_agent_count: number } | undefined;
+    return row?.sub_agent_count ?? 0;
+  }
+
+  /**
+   * Update session state (convenience method)
+   */
+  updateSessionState(sessionId: string, state: ActiveSession['state']): void {
+    this.updateSession(sessionId, { state });
+  }
+
+  /**
    * Convert database row to ActiveSession
    */
   private rowToSession(row: SessionRow): ActiveSession {
@@ -388,6 +421,7 @@ export class SessionRepository {
       loopDetected: row.loop_detected === 1,
       backoffSeconds: row.backoff_seconds,
       metadata,
+      subAgentCount: row.sub_agent_count,
     };
   }
 }

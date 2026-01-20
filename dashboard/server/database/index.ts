@@ -16,7 +16,7 @@ const DB_FILE = path.join(RALPH_DIR, 'ralph.db');
 
 export class RalphDatabase {
   private static instance: Database.Database | null = null;
-  private static currentVersion = 1;
+  private static currentVersion = 2;
 
   /**
    * Get the database instance, creating it if necessary
@@ -78,8 +78,9 @@ export class RalphDatabase {
       this.migration001(db);
     }
 
-    // Add more migrations as needed:
-    // if (currentVersion < 2) { this.migration002(db); }
+    if (currentVersion < 2) {
+      this.migration002(db);
+    }
   }
 
   /**
@@ -187,6 +188,21 @@ export class RalphDatabase {
     `);
 
     logger.info('Applied migration 001: Initial schema');
+  }
+
+  /**
+   * Migration 002: Add sub-agent tracking
+   */
+  private static migration002(db: Database.Database): void {
+    db.exec(`
+      -- Add sub_agent_count to active_sessions
+      ALTER TABLE active_sessions ADD COLUMN sub_agent_count INTEGER DEFAULT 0;
+
+      -- Record migration
+      INSERT INTO schema_version (version, description) VALUES (2, 'Add sub-agent tracking');
+    `);
+
+    logger.info('Applied migration 002: Add sub-agent tracking');
   }
 
   /**

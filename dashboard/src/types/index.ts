@@ -33,6 +33,40 @@ export interface LoopStatus {
   pid?: number;
 }
 
+// ============================================================================
+// Sub-agent Telemetry Types (Feature: Sub-agent Observability)
+// ============================================================================
+
+export interface SubAgentTelemetry {
+  sessionTotal: number;           // Total sub-agents this session
+  iterationCounts: Record<number, number>;  // iteration -> count
+  lastSpawnAt?: string;           // ISO date string
+  estimatedCost: number;          // Estimated additional cost in USD
+}
+
+export interface SubAgentConfig {
+  warningThreshold: number;       // Per iteration
+  criticalThreshold: number;      // Per iteration
+  sessionWarningThreshold: number; // Total session
+  estimatedCostPerAgent: number;  // USD per sub-agent spawn
+}
+
+// WebSocket messages for sub-agent telemetry
+export interface SubAgentStatusMessage extends WSMessage {
+  type: 'subagent:status';
+  payload: SubAgentTelemetry;
+}
+
+export interface SubAgentWarningMessage extends WSMessage {
+  type: 'subagent:warning';
+  payload: {
+    level: 'warning' | 'critical';
+    message: string;
+    iteration: number;
+    count: number;
+  };
+}
+
 export interface Task {
   id: string;
   content: string;
@@ -471,7 +505,9 @@ export type ServerMessage =
   | ExternalReposTokenValidatedMessage
   | ExternalReposTokenSetMessage
   | ExternalReposCacheStatsMessage
-  | ExternalReposErrorMessage;
+  | ExternalReposErrorMessage
+  | SubAgentStatusMessage
+  | SubAgentWarningMessage;
 
 // Client commands
 export interface StartLoopCommand {
