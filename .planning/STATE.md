@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 1 of 6 (Process Foundation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-19 - Completed 01-01-PLAN.md (PID File Infrastructure)
+Last activity: 2026-01-19 - Completed 01-02-PLAN.md (Graceful Shutdown)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 12 min
-- Total execution time: 0.2 hours
+- Total plans completed: 2
+- Average duration: 10 min
+- Total execution time: 0.33 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-process-foundation | 1/3 | 12 min | 12 min |
+| 01-process-foundation | 2/3 | 20 min | 10 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (12 min)
-- Trend: Baseline established
+- Last 5 plans: 01-01 (12 min), 01-02 (8 min)
+- Trend: Improving
 
 *Updated after each plan completion*
 
@@ -45,6 +45,8 @@ Recent decisions affecting current work:
 - PID files stored at ~/.ralph/pids/ (user-writable, cross-project visible)
 - JSON format for PID files with pid, projectId, projectPath, mode, startedAt
 - ProcessRegistry wraps SessionRepository (unified interface, keeps heartbeat)
+- 5 second default timeout before escalating SIGTERM to SIGKILL
+- Process group kill (-pid) on Unix to terminate child processes
 
 ### Pending Todos
 
@@ -57,5 +59,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Completed 01-01-PLAN.md (PID File Infrastructure)
+Stopped at: Completed 01-02-PLAN.md (Graceful Shutdown)
 Resume file: None
