@@ -224,6 +224,19 @@ export class LoopController extends EventEmitter {
 
     const pid = this.process.pid;
 
+    // Set status with starting: true immediately after spawn
+    this.status = {
+      running: true,
+      starting: true,  // Indicate startup in progress
+      mode,
+      iteration: 0,
+      maxIterations: maxIterations || 0,
+      workScope,
+      startedAt: new Date(),
+      pid,
+    };
+    this.emit('status', this.status);
+
     // Register loop with ProcessRegistry (creates session + PID file)
     if (this.projectId && pid) {
       const processRegistry = getProcessRegistry();
@@ -241,23 +254,22 @@ export class LoopController extends EventEmitter {
 
           // Start heartbeat
           this.startHeartbeat();
+
+          // Registration complete, clear starting flag
+          this.status = { ...this.status, starting: false };
+          this.emit('status', this.status);
         })
         .catch((err) => {
           this.emitLog(`Failed to create session: ${(err as Error).message}`, 'warning');
+          // Clear starting flag even on error
+          this.status = { ...this.status, starting: false };
+          this.emit('status', this.status);
         });
+    } else {
+      // No project ID, clear starting flag immediately
+      this.status = { ...this.status, starting: false };
+      this.emit('status', this.status);
     }
-
-    this.status = {
-      running: true,
-      mode,
-      iteration: 0,
-      maxIterations: maxIterations || 0,
-      workScope,
-      startedAt: new Date(),
-      pid,
-    };
-
-    this.emit('status', this.status);
 
     // Handle stdout
     this.process.stdout?.on('data', (data) => {
@@ -390,6 +402,8 @@ export class LoopController extends EventEmitter {
       this.status = {
         ...this.status,
         running: false,
+        starting: false,  // Clear starting flag on close
+        stopping: false,  // Clear stopping flag on close
         pid: undefined,
       };
       this.emit('status', this.status);
@@ -416,6 +430,8 @@ export class LoopController extends EventEmitter {
       this.status = {
         ...this.status,
         running: false,
+        starting: false,  // Clear starting flag on error
+        stopping: false,  // Clear stopping flag on error
         pid: undefined,
       };
       this.emit('status', this.status);
@@ -434,6 +450,9 @@ export class LoopController extends EventEmitter {
       return;
     }
 
+    // Emit stopping state before shutdown
+    this.status = { ...this.status, stopping: true };
+    this.emit('status', this.status);
     this.emitLog('Stopping loop...', 'info');
 
     // Mark session as stopping
