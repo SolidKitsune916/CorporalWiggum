@@ -17,6 +17,11 @@ import {
   findLogFile,
   CompletionSignal,
 } from '../lib/completion.js';
+import {
+  broadcastWebhooks,
+  createCompletionPayload,
+  createCrashedPayload,
+} from '../lib/webhook.js';
 
 /**
  * Check if process is alive
@@ -152,6 +157,20 @@ export const watchCommand = new Command('watch')
 
             if (!completed) {
               // Process died without completion signal = crash
+              // Fire crash webhook
+              const crashDuration = Math.round(
+                (Date.now() - new Date(loop.startedAt).getTime()) / 1000
+              );
+              broadcastWebhooks(
+                createCrashedPayload({
+                  projectId: project.id,
+                  projectPath: project.path,
+                  sessionId: loop.id,
+                  mode: loop.mode,
+                  durationSeconds: crashDuration,
+                })
+              );
+
               if (spinner) spinner.fail('Loop crashed before completion');
               if (options.json) {
                 outputJsonError('Loop crashed before completion');
@@ -173,6 +192,18 @@ export const watchCommand = new Command('watch')
 
             const duration = Date.now() - new Date(loop.startedAt).getTime();
             const durationSec = Math.round(duration / 1000);
+
+            // Fire webhook (fire and forget)
+            broadcastWebhooks(
+              createCompletionPayload({
+                projectId: project.id,
+                projectPath: project.path,
+                sessionId: loop.id,
+                mode: loop.mode,
+                durationSeconds: durationSec,
+                signal,
+              })
+            );
 
             if (options.json) {
               outputJson({
