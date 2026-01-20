@@ -84,12 +84,12 @@ Plans:
   3. Start/stop buttons work with immediate visual feedback
   4. Global header shows active loop count from any page
   5. Running projects display elapsed time and cost
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Launcher page layout and project cards
-- [ ] 04-02: Real-time status updates via WebSocket
-- [ ] 04-03: Global header with active loop count
+- [ ] 04-01-PLAN.md — Extend LauncherInstance with session metrics (LAUN-02, LAUN-05 backend)
+- [ ] 04-02-PLAN.md — LauncherContext and GlobalHeader (LAUN-04)
+- [ ] 04-03-PLAN.md — Enhanced ProjectCard with elapsed time and cost (LAUN-02, LAUN-05 frontend)
 
 ### Phase 5: Sub-agent Observability
 **Goal**: User can see sub-agent spawning behavior and costs per session
@@ -134,7 +134,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 | 1. Process Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Dashboard Reliability | 4/4 | Complete | 2026-01-20 |
 | 3. CLI Core | 3/3 | Complete | 2026-01-20 |
-| 4. Launcher Hub | 0/3 | Not started | - |
+| 4. Launcher Hub | 0/3 | Planned | - |
 | 5. Sub-agent Observability | 0/3 | Not started | - |
 | 6. Scriptability | 0/3 | Not started | - |
 
@@ -143,3 +143,4 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 *Phase 1 planned: 2026-01-19*
 *Phase 2 planned: 2026-01-19*
 *Phase 3 planned: 2026-01-20*
+*Phase 4 planned: 2026-01-20*
