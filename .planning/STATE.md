@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 2 of 6 (Dashboard Reliability)
-Plan: 3 of 4 in current phase
+Plan: 2 of 4 in current phase (02-01 and 02-03 complete)
 Status: In progress
-Last activity: 2026-01-20 - Completed 02-03-PLAN.md (Project Switching State Reset)
+Last activity: 2026-01-20 - Completed 02-01-PLAN.md (UI Intermediate States)
 
-Progress: [████░░░░░░] 40%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 7 min
-- Total execution time: 0.5 hours
+- Total execution time: 0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-process-foundation | 3/3 | 24 min | 8 min |
-| 02-dashboard-reliability | 1/4 | 2 min | 2 min |
+| 02-dashboard-reliability | 2/4 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (12 min), 01-02 (8 min), 01-03 (4 min), 02-03 (2 min)
-- Trend: Improving
+- Last 5 plans: 01-02 (8 min), 01-03 (4 min), 02-03 (2 min), 02-01 (8 min)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -52,6 +52,8 @@ Recent decisions affecting current work:
 - Live orphans require user action via WebSocket handlers
 - Reset ALL state when URL changes, not just core state (02-03)
 - Reset prevLoopRunningRef to prevent false "Loop stopped" toasts (02-03)
+- Optional starting/stopping flags in LoopStatus for intermediate UI states (02-01)
+- LoopController emits starting:true/false and stopping:true during transitions (02-01)
 
 ### Pending Todos
 
@@ -64,5 +66,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 02-03-PLAN.md (Project Switching State Reset)
+Stopped at: Completed 02-01-PLAN.md (UI Intermediate States)
 Resume file: None
