@@ -116,12 +116,12 @@ Plans:
   2. `ralph status --json` and `ralph list --json` output valid JSON
   3. Loop auto-stops when completion signal detected
   4. Webhook fires on loop completion or failure
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Exit codes and JSON output mode
-- [ ] 06-02: Auto-stop on completion
-- [ ] 06-03: Webhook notifications
+- [ ] 06-01-PLAN.md — Exit codes and JSON output mode (SCRP-01, SCRP-02)
+- [ ] 06-02-PLAN.md — Auto-stop on completion with watch command (SCRP-03)
+- [ ] 06-03-PLAN.md — Webhook notifications (SCRP-04)
 
 ## Progress
 
@@ -145,3 +145,4 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 *Phase 3 planned: 2026-01-20*
 *Phase 4 planned: 2026-01-20*
 *Phase 5 planned: 2026-01-20*
+*Phase 6 planned: 2026-01-20*
