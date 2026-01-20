@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Never lose track of running loops. When stopped, it's stopped. When running, you see them all.
-**Current focus:** Phase 5 - Sub-agent Observability
+**Current focus:** Phase 5 - Sub-agent Observability (Complete)
 
 ## Current Position
 
 Phase: 5 of 6 (Sub-agent Observability)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-20 - Completed 05-02-PLAN.md (Sub-Agent Frontend UI)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 - Completed 05-03-PLAN.md (Threshold Alerts & Session Summary)
 
-Progress: [███████████████░] 15/17 plans (88%)
+Progress: [████████████████] 16/17 plans (94%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 4.3 min
-- Total execution time: 1.12 hours
+- Total plans completed: 16
+- Average duration: 4.2 min
+- Total execution time: 1.15 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [███████████████░] 15/17 plans (88%)
 | 02-dashboard-reliability | 4/4 | 18 min | 4.5 min |
 | 03-cli-core | 3/3 | 11 min | 3.7 min |
 | 04-launcher-hub | 3/3 | 10 min | 3.3 min |
-| 05-sub-agent-observability | 2/3 | 7 min | 3.5 min |
+| 05-sub-agent-observability | 3/3 | 10 min | 3.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (3 min), 04-03 (3 min), 05-01 (3 min), 05-02 (4 min)
+- Last 5 plans: 04-03 (3 min), 05-01 (3 min), 05-02 (4 min), 05-03 (3 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -82,6 +82,10 @@ Recent decisions affecting current work:
 - Show last 5 iterations in breakdown (keeps panel compact) (05-02)
 - Default warning threshold 20 sub-agents per session (configurable via prop) (05-02)
 - Cost estimate rate $0.02 per sub-agent spawn (server calculates on broadcast) (05-02)
+- Per-iteration warning threshold: 5, critical: 10 (05-03)
+- Session warning threshold: 20 sub-agents (05-03)
+- Use numeric key encoding (iter*1000+level) for warning deduplication (05-03)
+- Track session summary on running->stopped transition via useRef (05-03)
 
 ### Pending Todos
 
@@ -94,5 +98,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 05-02-PLAN.md (Sub-Agent Frontend UI)
+Stopped at: Completed 05-03-PLAN.md (Threshold Alerts & Session Summary)
 Resume file: None
