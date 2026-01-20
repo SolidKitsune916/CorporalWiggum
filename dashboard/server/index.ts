@@ -30,6 +30,7 @@ import { RalphDatabase } from './database/index.js';
 import { getSessionRepository } from './database/repositories/SessionRepository.js';
 import { getProjectRepository } from './database/repositories/ProjectRepository.js';
 import { getHealthMonitor } from './healthMonitor.js';
+import { OrphanDetector, PidFileManager, type OrphanedLoop } from './processManager/index.js';
 import { logger } from './lib/logger.js';
 import { metrics, METRICS } from './lib/metrics.js';
 import { sendAlert } from './lib/alerts.js';
@@ -175,6 +176,27 @@ async function startServer() {
   const healthMonitor = getHealthMonitor();
   healthMonitor.start();
 
+  // Detect orphaned loops from previous dashboard instances
+  logger.info('Checking for orphaned loops...');
+  const orphanDetector = new OrphanDetector(
+    new PidFileManager(),
+    getSessionRepository()
+  );
+  const orphanResult = await orphanDetector.detectOrphans();
+
+  if (orphanResult.staleSessions.length > 0) {
+    logger.info(`Cleaned up ${orphanResult.staleSessions.length} stale sessions`);
+  }
+  if (orphanResult.stalePidFiles.length > 0) {
+    logger.info(`Cleaned up ${orphanResult.stalePidFiles.length} stale PID files`);
+  }
+  if (orphanResult.orphans.length > 0) {
+    logger.warn(`Found ${orphanResult.orphans.length} orphaned loop(s)`);
+  }
+
+  // Store orphans for WebSocket handlers
+  let pendingOrphans: OrphanedLoop[] = orphanResult.orphans;
+
   // Track connected clients
   const clients = new Set<WebSocket>();
 
@@ -214,6 +236,14 @@ async function startServer() {
     ws.send(JSON.stringify({ type: 'git:update', payload: fileWatcher.getGitStatus() }));
     ws.send(JSON.stringify({ type: 'config:update', payload: projectConfig.getConfig() }));
     ws.send(JSON.stringify({ type: 'project:info', payload: projectRoot }));
+
+    // Notify about orphaned loops if any
+    if (pendingOrphans.length > 0) {
+      ws.send(JSON.stringify({
+        type: 'orphans:detected',
+        payload: { orphans: pendingOrphans }
+      }));
+    }
 
     // Handle messages from client
     ws.on('message', async (data) => {
@@ -1602,6 +1632,62 @@ ${audienceContent}
             }
             break;
           }
+
+          // ============================================
+          // Orphan Detection WebSocket Handlers
+          // ============================================
+          case 'orphans:cleanup':
+            try {
+              const { pid, projectId } = message.payload as { pid: number; projectId: string };
+              const orphan = pendingOrphans.find(o => o.pid === pid && o.projectId === projectId);
+              if (!orphan) {
+                ws.send(JSON.stringify({
+                  type: 'orphans:error',
+                  payload: { error: 'Orphan not found' }
+                }));
+                break;
+              }
+              const success = await orphanDetector.cleanupOrphan(orphan);
+              if (success) {
+                pendingOrphans = pendingOrphans.filter(o => !(o.pid === pid && o.projectId === projectId));
+                broadcast({ type: 'orphans:cleaned', payload: { pid, projectId } });
+                broadcast({ type: 'orphans:detected', payload: { orphans: pendingOrphans } });
+              } else {
+                ws.send(JSON.stringify({
+                  type: 'orphans:error',
+                  payload: { error: 'Failed to cleanup orphan' }
+                }));
+              }
+            } catch (err) {
+              ws.send(JSON.stringify({
+                type: 'orphans:error',
+                payload: { error: err instanceof Error ? err.message : 'Unknown error' }
+              }));
+            }
+            break;
+
+          case 'orphans:cleanup-all':
+            try {
+              const result = await orphanDetector.cleanupAllOrphans(pendingOrphans);
+              pendingOrphans = [];
+              broadcast({
+                type: 'orphans:all-cleaned',
+                payload: { cleaned: result.cleaned, failed: result.failed }
+              });
+              broadcast({ type: 'orphans:detected', payload: { orphans: [] } });
+            } catch (err) {
+              ws.send(JSON.stringify({
+                type: 'orphans:error',
+                payload: { error: err instanceof Error ? err.message : 'Unknown error' }
+              }));
+            }
+            break;
+
+          case 'orphans:ignore':
+            // User chose to ignore orphans (keep them running)
+            pendingOrphans = [];
+            broadcast({ type: 'orphans:detected', payload: { orphans: [] } });
+            break;
         }
       } catch (err) {
         logger.error('Error handling WebSocket message', { error: err instanceof Error ? err.message : 'Unknown error' });
