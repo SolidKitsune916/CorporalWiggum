@@ -49,10 +49,10 @@ Requirements for this release. Each maps to roadmap phases.
 
 ### Scriptability
 
-- [ ] **SCRP-01**: CLI commands return proper exit codes (0=success, non-zero=error)
-- [ ] **SCRP-02**: `ralph status --json` and `ralph list --json` output machine-readable JSON
-- [ ] **SCRP-03**: Loop automatically stops and reports when completion signal detected
-- [ ] **SCRP-04**: Optional webhook POST on loop completion or failure
+- [x] **SCRP-01**: CLI commands return proper exit codes (0=success, non-zero=error)
+- [x] **SCRP-02**: `ralph status --json` and `ralph list --json` output machine-readable JSON
+- [x] **SCRP-03**: Loop automatically stops and reports when completion signal detected
+- [x] **SCRP-04**: Optional webhook POST on loop completion or failure
 
 ## v2 Requirements
 
@@ -108,10 +108,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OBSV-02 | Phase 5 | Complete |
 | OBSV-03 | Phase 5 | Complete |
 | OBSV-04 | Phase 5 | Complete |
-| SCRP-01 | Phase 6 | Pending |
-| SCRP-02 | Phase 6 | Pending |
-| SCRP-03 | Phase 6 | Pending |
-| SCRP-04 | Phase 6 | Pending |
+| SCRP-01 | Phase 6 | Complete |
+| SCRP-02 | Phase 6 | Complete |
+| SCRP-03 | Phase 6 | Complete |
+| SCRP-04 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 29 total

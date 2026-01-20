@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: CLI Core** - Terminal interface for loop control
 - [x] **Phase 4: Launcher Hub** - Multi-project dashboard view
 - [x] **Phase 5: Sub-agent Observability** - Track and display sub-agent spawning
-- [ ] **Phase 6: Scriptability** - Exit codes, JSON output, auto-stop, webhooks
+- [x] **Phase 6: Scriptability** - Exit codes, JSON output, auto-stop, webhooks
 
 ## Phase Details
 
@@ -119,9 +119,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Exit codes and JSON output mode (SCRP-01, SCRP-02)
-- [ ] 06-02-PLAN.md — Auto-stop on completion with watch command (SCRP-03)
-- [ ] 06-03-PLAN.md — Webhook notifications (SCRP-04)
+- [x] 06-01-PLAN.md — Exit codes and JSON output mode (SCRP-01, SCRP-02)
+- [x] 06-02-PLAN.md — Auto-stop on completion with watch command (SCRP-03)
+- [x] 06-03-PLAN.md — Webhook notifications (SCRP-04)
 
 ## Progress
 
@@ -136,7 +136,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 | 3. CLI Core | 3/3 | Complete | 2026-01-20 |
 | 4. Launcher Hub | 3/3 | Complete | 2026-01-20 |
 | 5. Sub-agent Observability | 3/3 | Complete | 2026-01-20 |
-| 6. Scriptability | 0/3 | Not started | - |
+| 6. Scriptability | 3/3 | Complete | 2026-01-20 |
 
 ---
 *Roadmap created: 2026-01-19*
