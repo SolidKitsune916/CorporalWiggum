@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 6 of 6 (Scriptability)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-20 - Completed 06-01-PLAN.md (Exit Codes & JSON Output)
+Last activity: 2026-01-20 - Completed 06-02-PLAN.md (Watch Command & Completion Detection)
 
-Progress: [█████████████████] 17/19 plans (89%)
+Progress: [██████████████████] 18/19 plans (95%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
-- Average duration: 4.1 min
+- Total plans completed: 18
+- Average duration: 4.0 min
 - Total execution time: 1.2 hours
 
 **By Phase:**
@@ -32,10 +32,10 @@ Progress: [█████████████████] 17/19 plans (89%
 | 03-cli-core | 3/3 | 11 min | 3.7 min |
 | 04-launcher-hub | 3/3 | 10 min | 3.3 min |
 | 05-sub-agent-observability | 3/3 | 10 min | 3.3 min |
-| 06-scriptability | 1/3 | 4 min | 4 min |
+| 06-scriptability | 2/3 | 6 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (3 min), 05-02 (4 min), 05-03 (3 min), 06-01 (4 min)
+- Last 5 plans: 05-02 (4 min), 05-03 (3 min), 06-01 (4 min), 06-02 (2 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -91,6 +91,10 @@ Recent decisions affecting current work:
 - JSON errors go to stdout (not stderr) for consistent script parsing (06-01)
 - Empty results return exit 0 with data: [] (not error) (06-01)
 - JSON envelope includes timestamp and version metadata for debugging (06-01)
+- Match loop.sh grep behavior for signal detection (string includes check) (06-02)
+- Use fs.watch for completion monitoring (same pattern as tail.ts) (06-02)
+- Poll process alive every 2s to detect crash vs completion (06-02)
+- Exit codes for watch: 0 on completion, 1 on crash/timeout, 64 on not found (06-02)
 
 ### Pending Todos
 
@@ -103,5 +107,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 06-01-PLAN.md (Exit Codes & JSON Output)
+Stopped at: Completed 06-02-PLAN.md (Watch Command & Completion Detection)
 Resume file: None
