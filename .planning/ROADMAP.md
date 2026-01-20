@@ -47,13 +47,13 @@ Plans:
   2. User clicks Stop, process terminates, UI shows "Stopped" within 5 seconds
   3. Task list updates automatically when IMPLEMENTATION_PLAN.md changes
   4. User can switch between projects and see correct context each time
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 02-01: Loop start reliability (spawn + confirm running)
-- [ ] 02-02: Loop stop reliability (kill + confirm terminated)
-- [ ] 02-03: Task list file watching fixes
-- [ ] 02-04: Project switching navigation fixes
+- [ ] 02-01-PLAN.md — Start/stop intermediate UI states (DASH-01, DASH-02)
+- [ ] 02-02-PLAN.md — Task list file watching reliability (DASH-03)
+- [ ] 02-03-PLAN.md — Project switching context reset (DASH-04)
+- [ ] 02-04-PLAN.md — Integrated verification checkpoint
 
 ### Phase 3: CLI Core
 **Goal**: User can control loops from terminal without opening dashboard
@@ -132,7 +132,7 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Process Foundation | 3/3 | Complete | 2026-01-19 |
-| 2. Dashboard Reliability | 0/4 | Not started | - |
+| 2. Dashboard Reliability | 0/4 | Planned | - |
 | 3. CLI Core | 0/3 | Not started | - |
 | 4. Launcher Hub | 0/3 | Not started | - |
 | 5. Sub-agent Observability | 0/3 | Not started | - |
@@ -141,3 +141,4 @@ Note: Phase 3 (CLI) and Phase 2 (Dashboard) both depend on Phase 1, so they coul
 ---
 *Roadmap created: 2026-01-19*
 *Phase 1 planned: 2026-01-19*
+*Phase 2 planned: 2026-01-19*
