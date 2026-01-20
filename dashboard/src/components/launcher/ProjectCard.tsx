@@ -90,14 +90,44 @@ export function ProjectCard({
   const isRunning = !!instance;
 
   const getStatusBadge = () => {
-    if (isRunning) {
+    // Check for error/crash state first
+    if (instance?.loopStatus?.state === 'crashed') {
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Crashed
+        </Badge>
+      );
+    }
+
+    if (instance?.loopStatus?.state === 'stopping') {
+      return (
+        <Badge variant="warning" className="flex items-center gap-1">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Stopping
+        </Badge>
+      );
+    }
+
+    if (isRunning && instance?.loopStatus?.running) {
       return (
         <Badge variant="success" className="flex items-center gap-1">
-          <CheckCircle className="h-3 w-3" />
+          <Play className="h-3 w-3 animate-pulse" />
           Running
         </Badge>
       );
     }
+
+    if (isRunning && !instance?.loopStatus?.running) {
+      // Instance exists but loop not running - might be starting or idle
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <CheckCircle className="h-3 w-3" />
+          Ready
+        </Badge>
+      );
+    }
+
     if (!project.isRalphReady) {
       return (
         <Badge variant="warning" className="flex items-center gap-1">
@@ -106,6 +136,7 @@ export function ProjectCard({
         </Badge>
       );
     }
+
     return (
       <Badge variant="secondary" className="flex items-center gap-1">
         Idle
