@@ -10,6 +10,7 @@
  *   ralph stop --all        Stop all running loops
  *   ralph attach <project>  Stream live output from a running loop
  *   ralph logs <project>    Show recent log output
+ *   ralph watch <project>   Wait for a loop to complete
  */
 
 import { Command } from 'commander';
@@ -19,6 +20,7 @@ import { startCommand } from './commands/start.js';
 import { stopCommand } from './commands/stop.js';
 import { attachCommand } from './commands/attach.js';
 import { logsCommand } from './commands/logs.js';
+import { watchCommand } from './commands/watch.js';
 
 const program = new Command();
 
@@ -33,5 +35,6 @@ program.addCommand(startCommand);
 program.addCommand(stopCommand);
 program.addCommand(attachCommand);
 program.addCommand(logsCommand);
+program.addCommand(watchCommand);
 
 program.parseAsync(process.argv);
