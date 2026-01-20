@@ -14,3 +14,8 @@ export {
   type OrphanInfo,
 } from './ProcessRegistry.js';
 export { GracefulShutdown, type StopResult } from './GracefulShutdown.js';
+export {
+  OrphanDetector,
+  type OrphanedLoop,
+  type OrphanDetectionResult,
+} from './OrphanDetector.js';

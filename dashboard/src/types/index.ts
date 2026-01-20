@@ -294,6 +294,56 @@ export interface SessionErrorMessage extends WSMessage {
 }
 
 // ============================================================================
+// Orphan Detection Types (for startup orphan cleanup)
+// ============================================================================
+
+/**
+ * Information about an orphaned loop detected at startup
+ */
+export interface OrphanedLoop {
+  projectId: string;
+  projectPath?: string;
+  pid: number;
+  mode: LoopMode;
+  startedAt: string;
+  source: 'database' | 'pidfile';
+  status: 'alive' | 'dead';
+}
+
+/**
+ * Result of orphan detection at startup
+ */
+export interface OrphanDetectionResult {
+  /** Live processes without proper tracking */
+  orphans: OrphanedLoop[];
+  /** Session IDs marked as crashed (dead processes) */
+  staleSessions: string[];
+  /** PID files deleted (dead processes) */
+  stalePidFiles: string[];
+}
+
+// Orphan detection WebSocket messages
+export interface OrphansDetectedMessage extends WSMessage {
+  type: 'orphans:detected';
+  payload: { orphans: OrphanedLoop[] };
+}
+
+export interface OrphansCleanedMessage extends WSMessage {
+  type: 'orphans:cleaned';
+  payload: { pid: number; projectId: string };
+}
+
+export interface OrphansAllCleanedMessage extends WSMessage {
+  type: 'orphans:all-cleaned';
+  payload: { cleaned: number; failed: number };
+}
+
+export interface OrphansErrorMessage extends WSMessage {
+  type: 'orphans:error';
+  payload: { error: string };
+}
+
+// ============================================================================
 // Workflow Mode WebSocket Messages
 // ============================================================================
 
@@ -373,6 +423,10 @@ export type ServerMessage =
   | SessionRecoveredMessage
   | SessionNoneMessage
   | SessionErrorMessage
+  | OrphansDetectedMessage
+  | OrphansCleanedMessage
+  | OrphansAllCleanedMessage
+  | OrphansErrorMessage
   | ModeCurrentMessage
   | ModeUpdatedMessage
   | PortsListMessage
