@@ -1765,6 +1765,14 @@ ${audienceContent}
     });
   });
 
+  // Sub-agent warning broadcast
+  loopController.on('subagent:warning', (data: { level: string; message: string; iteration: number; count: number }) => {
+    broadcast({
+      type: 'subagent:warning',
+      payload: data,
+    });
+  });
+
   // Plan generator events
   planGenerator.on('status', (status) => {
     broadcast({ type: 'plan:status', payload: status });
