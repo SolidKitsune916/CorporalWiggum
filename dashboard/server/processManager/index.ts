@@ -1,0 +1,15 @@
+/**
+ * Process Manager Module
+ *
+ * Provides central process tracking for all running loops across projects.
+ * Combines database persistence (SessionRepository) with PID files for
+ * reliable tracking that survives dashboard restarts.
+ */
+
+export { PidFileManager, type PidFileContent } from './PidFileManager.js';
+export {
+  ProcessRegistry,
+  getProcessRegistry,
+  type ActiveLoopInfo,
+  type OrphanInfo,
+} from './ProcessRegistry.js';
