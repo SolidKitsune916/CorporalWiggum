@@ -10,6 +10,7 @@ import { spawn, ChildProcess, exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
+import { logger } from './lib/logger.js';
 
 interface StoriesGeneratorStatus {
   generating: boolean;
@@ -102,7 +103,7 @@ export class StoriesGenerator extends EventEmitter {
       }
 
       // Spawn Claude CLI
-      console.log(`Starting stories generation in directory: ${this.projectPath}`);
+      logger.info('Starting stories generation', { directory: this.projectPath });
 
       this.process = spawn('claude', claudeArgs, {
         cwd: this.projectPath,
@@ -129,7 +130,7 @@ export class StoriesGenerator extends EventEmitter {
       // Handle stderr
       this.process.stderr?.on('data', (data) => {
         const text = data.toString();
-        console.error('Stories generator stderr:', text);
+        logger.error('Stories generator stderr', { text });
       });
 
       // Handle process close
@@ -287,7 +288,7 @@ Output the JSON now:`;
           };
         }
       } catch (e) {
-        console.error('Failed to parse prd.json:', e);
+        logger.error('Failed to parse prd.json', { error: e instanceof Error ? e.message : String(e) });
       }
     }
 

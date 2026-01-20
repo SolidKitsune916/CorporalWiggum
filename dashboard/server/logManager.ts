@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { logger } from './lib/logger.js';
 
 export interface LogSession {
   filename: string;
@@ -76,7 +77,7 @@ export class LogManager {
 
       return sessions;
     } catch (err) {
-      console.error('Error listing logs:', err);
+      logger.error('Error listing logs', { error: err instanceof Error ? err.message : String(err) });
       return [];
     }
   }
@@ -176,7 +177,7 @@ export class LogManager {
           await this.deleteLog(session.filename);
           deletedCount++;
         } catch (err) {
-          console.error(`Failed to delete old log ${session.filename}:`, err);
+          logger.error('Failed to delete old log', { filename: session.filename, error: err instanceof Error ? err.message : String(err) });
         }
       }
     }

@@ -11,6 +11,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { logger } from './lib/logger.js';
 
 export interface DeadHandler {
   file: string;
@@ -106,7 +107,7 @@ export class FunctionalityChecker {
       result.summary.total = result.summary.critical + result.summary.warnings;
 
     } catch (err) {
-      console.error('Error running functionality checks:', err);
+      logger.error('Error running functionality checks', { error: err instanceof Error ? err.message : String(err) });
     }
 
     return result;

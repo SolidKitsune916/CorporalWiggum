@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import simpleGit from 'simple-git';
 import type { Task, TasksState, GitStatus, GitCommit, LogEntry } from '../src/types';
+import { logger } from './lib/logger.js';
 
 export class FileWatcher extends EventEmitter {
   private projectPath: string;
@@ -165,7 +166,7 @@ export class FileWatcher extends EventEmitter {
         await this.parseImplementationPlanTasks();
       }
     } catch (error) {
-      console.error('Error parsing tasks:', error);
+      logger.error('Error parsing tasks', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 

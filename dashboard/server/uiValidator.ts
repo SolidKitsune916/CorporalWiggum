@@ -11,6 +11,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { logger } from './lib/logger.js';
 
 export interface ButtonIssue {
   file: string;
@@ -82,7 +83,7 @@ export class UIValidator {
       result.summary.async = asyncOps.length;
       result.summary.total = buttons.length + forms.length + asyncOps.length;
     } catch (err) {
-      console.error('Error running UI validation:', err);
+      logger.error('Error running UI validation', { error: err instanceof Error ? err.message : String(err) });
     }
 
     return result;

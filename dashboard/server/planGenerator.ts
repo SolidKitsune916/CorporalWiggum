@@ -3,6 +3,7 @@ import { spawn, ChildProcess, exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
+import { logger } from './lib/logger.js';
 
 export type PlanMode = 'plan' | 'plan-slc' | 'plan-work';
 
@@ -120,7 +121,7 @@ export class PlanGenerator extends EventEmitter {
       // Spawn Claude CLI
       // IMPORTANT: cwd is set to projectPath (parent directory) so Claude runs in the correct location
       // and any files it creates/writes will be in the parent directory, not ralph-wiggum-v2
-      console.log(`Starting plan generation in directory: ${this.projectPath}`);
+      logger.info('Starting plan generation', { directory: this.projectPath });
       this.process = spawn('claude', claudeArgs, {
         cwd: this.projectPath,
         stdio: ['pipe', 'pipe', 'pipe'],

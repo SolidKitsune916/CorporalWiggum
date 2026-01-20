@@ -3,6 +3,7 @@ import { spawn, ChildProcess, exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
+import { logger } from './lib/logger.js';
 
 export type ReviewMode = 'review' | 'review-quick' | 'review-spec';
 
@@ -114,7 +115,7 @@ export class ReviewGenerator extends EventEmitter {
       }
 
       // Spawn Claude CLI
-      console.log(`Starting review generation in directory: ${this.projectPath}`);
+      logger.info('Starting review generation', { directory: this.projectPath });
       this.process = spawn('claude', claudeArgs, {
         cwd: this.projectPath,
         stdio: ['pipe', 'pipe', 'pipe'],

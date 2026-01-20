@@ -10,6 +10,7 @@ import { spawn, ChildProcess, exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
+import { logger } from './lib/logger.js';
 
 interface TroubleshootStatus {
   running: boolean;
@@ -112,8 +113,7 @@ If you need more context, explore the codebase to understand the relevant code.
       }
 
       // Spawn Claude CLI
-      console.log(`Starting troubleshoot in directory: ${this.projectPath}`);
-      console.log(`Error log length: ${errorLog.length} characters`);
+      logger.info('Starting troubleshoot', { directory: this.projectPath, errorLogLength: errorLog.length });
 
       this.process = spawn('claude', claudeArgs, {
         cwd: this.projectPath,
@@ -140,7 +140,7 @@ If you need more context, explore the codebase to understand the relevant code.
       // Handle stderr
       this.process.stderr?.on('data', (data) => {
         const text = data.toString();
-        console.error('Troubleshoot stderr:', text);
+        logger.error('Troubleshoot stderr', { text });
         // Emit stderr as output too so user can see it
         this.emit('output', `[stderr] ${text}`);
       });

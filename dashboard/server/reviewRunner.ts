@@ -10,6 +10,7 @@ import { spawn, ChildProcess, exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
+import { logger } from './lib/logger.js';
 
 export interface ReviewConfig {
   criteria: string;      // What to evaluate (behavioral, observable)
@@ -137,8 +138,7 @@ Evaluate and respond with JSON only.`;
       }
 
       // Spawn Claude CLI
-      console.log(`Starting review in directory: ${this.projectPath}`);
-      console.log(`Review criteria: ${criteria.substring(0, 100)}...`);
+      logger.info('Starting review', { directory: this.projectPath, criteriaPreview: criteria.substring(0, 100) });
 
       this.process = spawn('claude', claudeArgs, {
         cwd: this.projectPath,
@@ -165,7 +165,7 @@ Evaluate and respond with JSON only.`;
       // Handle stderr
       this.process.stderr?.on('data', (data) => {
         const text = data.toString();
-        console.error('Review stderr:', text);
+        logger.error('Review stderr', { text });
       });
 
       // Handle process close

@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import type { ProjectConfig, AgentInfo, CursorRuleInfo } from '../src/types';
+import { logger } from './lib/logger.js';
 
 // Maximum file size for reads (10MB)
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -134,14 +135,14 @@ export class ProjectConfigManager {
       throw new Error('Invalid filename');
     }
 
-    console.log(`Writing ${filename} to: ${filePath}`);
+    logger.info('Writing file', { filename, filePath });
 
     // Ensure directory exists
     const dir = path.dirname(filePath);
     await fs.mkdir(dir, { recursive: true });
 
     await fs.writeFile(filePath, content, 'utf-8');
-    console.log(`Successfully wrote ${filename} to ${filePath}`);
+    logger.info('Successfully wrote file', { filename, filePath });
     await this.refresh();
   }
 
@@ -264,7 +265,7 @@ export class ProjectConfigManager {
       await this.writeFile('CLAUDE.md', content);
       return this.enabledAgents;
     } catch (err) {
-      console.error('Error toggling agent:', err);
+      logger.error('Error toggling agent', { error: err instanceof Error ? err.message : String(err) });
       throw err;
     }
   }
@@ -460,7 +461,7 @@ export class ProjectConfigManager {
         await fs.rename(enabledPath, disabledPath);
       }
     } catch (err) {
-      console.error('Error toggling cursor rule:', err);
+      logger.error('Error toggling cursor rule', { error: err instanceof Error ? err.message : String(err) });
       throw err;
     }
 

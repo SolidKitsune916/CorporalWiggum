@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import { getSessionRepository, type ActiveSession } from './database/repositories/SessionRepository.js';
 import { getExecutionHistoryRepository } from './database/repositories/ExecutionHistoryRepository.js';
 import { DatabaseBackup } from './database/backup.js';
+import { logger } from './lib/logger.js';
 
 // Heartbeat timeout - if no heartbeat in this time, session is stale
 const HEARTBEAT_TIMEOUT_MS = 30000; // 30 seconds
@@ -52,7 +53,7 @@ export class HealthMonitor extends EventEmitter {
     }
 
     this.running = true;
-    console.log('[HealthMonitor] Starting health monitor...');
+    logger.info('Starting health monitor');
 
     // Perform initial check
     this.performCheck();
@@ -64,7 +65,7 @@ export class HealthMonitor extends EventEmitter {
 
     // Perform daily backup on startup if needed (async, don't block startup)
     DatabaseBackup.performDailyBackupIfNeeded().catch(err => {
-      console.error('[HealthMonitor] Failed to perform daily backup:', err);
+      logger.error('Failed to perform daily backup', { error: err instanceof Error ? err.message : String(err) });
     });
   }
 
@@ -77,7 +78,7 @@ export class HealthMonitor extends EventEmitter {
       this.checkInterval = null;
     }
     this.running = false;
-    console.log('[HealthMonitor] Stopped health monitor');
+    logger.info('Stopped health monitor');
   }
 
   /**
@@ -112,7 +113,7 @@ export class HealthMonitor extends EventEmitter {
 
       this.emit('health:check', stats);
     } catch (error) {
-      console.error('[HealthMonitor] Error during health check:', error);
+      logger.error('Error during health check', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -122,7 +123,7 @@ export class HealthMonitor extends EventEmitter {
   private checkSessionHealth(session: ActiveSession): void {
     // Check if process is still alive
     if (!this.isProcessAlive(session.pid)) {
-      console.log(`[HealthMonitor] Process ${session.pid} for session ${session.id} is not alive`);
+      logger.info('Process is not alive', { pid: session.pid, sessionId: session.id });
       this.handleOrphanedSession(session);
       return;
     }
@@ -133,9 +134,7 @@ export class HealthMonitor extends EventEmitter {
     const ageMs = now.getTime() - lastHeartbeat.getTime();
 
     if (ageMs > HEARTBEAT_TIMEOUT_MS) {
-      console.log(
-        `[HealthMonitor] Session ${session.id} heartbeat stale (${Math.round(ageMs / 1000)}s old)`
-      );
+      logger.warn('Session heartbeat stale', { sessionId: session.id, ageSeconds: Math.round(ageMs / 1000) });
       // Don't immediately mark as orphaned - the process might still be running
       // The cleanupStaleSessions call will handle this
     }
@@ -145,7 +144,7 @@ export class HealthMonitor extends EventEmitter {
    * Handle an orphaned session
    */
   private handleOrphanedSession(session: ActiveSession): void {
-    console.log(`[HealthMonitor] Handling orphaned session: ${session.id}`);
+    logger.info('Handling orphaned session', { sessionId: session.id });
 
     const sessionRepo = getSessionRepository();
     const historyRepo = getExecutionHistoryRepository();
@@ -202,7 +201,7 @@ export class HealthMonitor extends EventEmitter {
     for (const session of activeSessions) {
       // Check if process is still alive
       if (this.isProcessAlive(session.pid)) {
-        console.log(`[HealthMonitor] Recovered session ${session.id} (PID: ${session.pid})`);
+        logger.info('Recovered session', { sessionId: session.id, pid: session.pid });
         this.emit('session:recovered', session);
         return session;
       } else {

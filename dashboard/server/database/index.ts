@@ -9,6 +9,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+import { logger } from '../lib/logger.js';
 
 const RALPH_DIR = path.join(os.homedir(), '.ralph');
 const DB_FILE = path.join(RALPH_DIR, 'ralph.db');
@@ -185,7 +186,7 @@ export class RalphDatabase {
       INSERT INTO schema_version (version, description) VALUES (1, 'Initial schema');
     `);
 
-    console.log('[Database] Applied migration 001: Initial schema');
+    logger.info('Applied migration 001: Initial schema');
   }
 
   /**

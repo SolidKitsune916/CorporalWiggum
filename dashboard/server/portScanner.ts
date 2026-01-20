@@ -1,5 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { logger } from './lib/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -249,7 +250,7 @@ export async function scanPorts(): Promise<PortProcess[]> {
 
     return processes;
   } catch (error) {
-    console.error('Failed to scan ports:', error);
+    logger.error('Failed to scan ports', { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }

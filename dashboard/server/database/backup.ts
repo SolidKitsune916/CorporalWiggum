@@ -8,6 +8,7 @@
 import path from 'path';
 import fs from 'fs';
 import { RalphDatabase } from './index.js';
+import { logger } from '../lib/logger.js';
 
 const BACKUP_DIR = path.join(RalphDatabase.getRalphDir(), 'backups');
 const MAX_BACKUPS = 7; // Keep last 7 days by default
@@ -43,7 +44,7 @@ export class DatabaseBackup {
     const now = new Date().toISOString();
     this.lastBackupDate = now.split('T')[0];
 
-    console.log(`[Backup] Created backup: ${filename}`);
+    logger.info('Created backup', { filename });
 
     // Clean old backups
     this.cleanOldBackups();
@@ -94,7 +95,7 @@ export class DatabaseBackup {
       // Reconnect to verify
       RalphDatabase.getInstance();
 
-      console.log(`[Backup] Restored from: ${backupPath}`);
+      logger.info('Restored from backup', { backupPath });
 
       // Remove pre-restore backup on success
       if (fs.existsSync(preRestoreBackup)) {
@@ -176,9 +177,9 @@ export class DatabaseBackup {
       try {
         fs.unlinkSync(backup.path);
         deleted++;
-        console.log(`[Backup] Deleted old backup: ${backup.filename}`);
+        logger.info('Deleted old backup', { filename: backup.filename });
       } catch (error) {
-        console.error(`[Backup] Failed to delete ${backup.filename}:`, error);
+        logger.error('Failed to delete backup', { filename: backup.filename, error: error instanceof Error ? error.message : String(error) });
       }
     }
 

@@ -57,9 +57,9 @@ These files export both components and non-component values, which breaks React 
 ## Missing Hook Dependencies
 
 ### useWebSocket.ts (Line 979)
-- **Issue**: `useCallback` missing `loopStatus.running` dependency
-- **Why skipped**: Adding this dependency could cause unnecessary re-renders or change callback identity unexpectedly
-- **Suggested fix**: Review if `loopStatus.running` should be in the dependency array or if the callback should be restructured
+- **Issue**: Initially reported as `useCallback` missing `loopStatus.running` dependency
+- **Status**: **FALSE POSITIVE** - `loopStatus.running` is not referenced in useWebSocket.ts
+- **Resolution**: No action needed. ESLint passes with no react-hooks/exhaustive-deps warnings
 
 ## npm Audit Vulnerabilities (Moderate Severity)
 
