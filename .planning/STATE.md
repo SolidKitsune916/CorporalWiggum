@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Never lose track of running loops. When stopped, it's stopped. When running, you see them all.
-**Current focus:** Phase 6 - Scriptability (In Progress)
+**Current focus:** Phase 6 - Scriptability (COMPLETE)
 
 ## Current Position
 
 Phase: 6 of 6 (Scriptability)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-20 - Completed 06-02-PLAN.md (Watch Command & Completion Detection)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 - Completed 06-03-PLAN.md (Webhook Notifications)
 
-Progress: [██████████████████] 18/19 plans (95%)
+Progress: [███████████████████] 19/19 plans (100%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 4.0 min
-- Total execution time: 1.2 hours
+- Total plans completed: 19
+- Average duration: 3.9 min
+- Total execution time: 1.25 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [██████████████████] 18/19 plans (
 | 03-cli-core | 3/3 | 11 min | 3.7 min |
 | 04-launcher-hub | 3/3 | 10 min | 3.3 min |
 | 05-sub-agent-observability | 3/3 | 10 min | 3.3 min |
-| 06-scriptability | 2/3 | 6 min | 3 min |
+| 06-scriptability | 3/3 | 9 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (4 min), 05-03 (3 min), 06-01 (4 min), 06-02 (2 min)
+- Last 5 plans: 05-03 (3 min), 06-01 (4 min), 06-02 (2 min), 06-03 (3 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -95,6 +95,10 @@ Recent decisions affecting current work:
 - Use fs.watch for completion monitoring (same pattern as tail.ts) (06-02)
 - Poll process alive every 2s to detect crash vs completion (06-02)
 - Exit codes for watch: 0 on completion, 1 on crash/timeout, 64 on not found (06-02)
+- Environment variable webhook config (RALPH_WEBHOOK_URL, RALPH_WEBHOOK_URLS) (06-03)
+- Fire-and-forget webhooks to avoid blocking commands (06-03)
+- Exponential backoff retry (1s, 2s, 4s) with 3 attempts max (06-03)
+- X-Ralph-Event-Id header for receiver-side deduplication (06-03)
 
 ### Pending Todos
 
@@ -107,5 +111,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 06-02-PLAN.md (Watch Command & Completion Detection)
+Stopped at: Completed 06-03-PLAN.md (Webhook Notifications) - ALL PHASES COMPLETE
 Resume file: None
