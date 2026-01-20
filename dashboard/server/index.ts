@@ -1688,6 +1688,16 @@ ${audienceContent}
             pendingOrphans = [];
             broadcast({ type: 'orphans:detected', payload: { orphans: [] } });
             break;
+
+          // ============================================
+          // Task List Refresh Handler
+          // ============================================
+          case 'tasks:refresh':
+            // Force refresh task list - useful when file watcher misses changes
+            await fileWatcher.forceTaskRefresh();
+            // Note: forceTaskRefresh calls parseTasks which emits 'tasks' event
+            // The 'tasks' event handler broadcasts to all clients
+            break;
         }
       } catch (err) {
         logger.error('Error handling WebSocket message', { error: err instanceof Error ? err.message : 'Unknown error' });
