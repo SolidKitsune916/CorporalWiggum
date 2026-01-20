@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Never lose track of running loops. When stopped, it's stopped. When running, you see them all.
-**Current focus:** Phase 2 Complete - Ready for Phase 3
+**Current focus:** Phase 3 - CLI Core
 
 ## Current Position
 
-Phase: 2 of 6 (Dashboard Reliability) - COMPLETE
-Plan: 4 of 4 in current phase (all complete)
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 02-04-PLAN.md (Integrated Verification)
+Phase: 3 of 6 (CLI Core)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 03-01-PLAN.md (CLI Scaffold)
 
-Progress: [███████░░░] 70%
+Progress: [████████░░] 73%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 6 min
-- Total execution time: 0.73 hours
+- Total plans completed: 8
+- Average duration: 5.5 min
+- Total execution time: 0.8 hours
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [███████░░░] 70%
 |-------|-------|-------|----------|
 | 01-process-foundation | 3/3 | 24 min | 8 min |
 | 02-dashboard-reliability | 4/4 | 18 min | 4.5 min |
+| 03-cli-core | 1/3 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (2 min), 02-01 (8 min), 02-02 (3 min), 02-04 (5 min)
+- Last 5 plans: 02-02 (3 min), 02-03 (2 min), 02-04 (5 min), 03-01 (4 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -56,6 +57,8 @@ Recent decisions affecting current work:
 - LoopController emits starting:true/false and stopping:true during transitions (02-01)
 - Use 200ms stabilityThreshold with 50ms poll interval for awaitWriteFinish (02-02)
 - All DASH requirements verified working in integrated test (02-04)
+- CLI uses standalone database access (no dashboard dependency) (03-01)
+- PID file fallback in CLI for orphaned processes not in database (03-01)
 
 ### Pending Todos
 
@@ -68,5 +71,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 02-04-PLAN.md (Integrated Verification) - Phase 2 Complete
+Stopped at: Completed 03-01-PLAN.md (CLI Scaffold)
 Resume file: None
