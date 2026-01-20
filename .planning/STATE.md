@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Never lose track of running loops. When stopped, it's stopped. When running, you see them all.
-**Current focus:** Phase 5 - Sub-agent Observability (Complete)
+**Current focus:** Phase 6 - Scriptability (In Progress)
 
 ## Current Position
 
-Phase: 5 of 6 (Sub-agent Observability)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 05-03-PLAN.md (Threshold Alerts & Session Summary)
+Phase: 6 of 6 (Scriptability)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 06-01-PLAN.md (Exit Codes & JSON Output)
 
-Progress: [████████████████] 16/17 plans (94%)
+Progress: [█████████████████] 17/19 plans (89%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 4.2 min
-- Total execution time: 1.15 hours
+- Total plans completed: 17
+- Average duration: 4.1 min
+- Total execution time: 1.2 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [████████████████] 16/17 plans (94%)
 | 03-cli-core | 3/3 | 11 min | 3.7 min |
 | 04-launcher-hub | 3/3 | 10 min | 3.3 min |
 | 05-sub-agent-observability | 3/3 | 10 min | 3.3 min |
+| 06-scriptability | 1/3 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (3 min), 05-01 (3 min), 05-02 (4 min), 05-03 (3 min)
+- Last 5 plans: 05-01 (3 min), 05-02 (4 min), 05-03 (3 min), 06-01 (4 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -86,6 +87,10 @@ Recent decisions affecting current work:
 - Session warning threshold: 20 sub-agents (05-03)
 - Use numeric key encoding (iter*1000+level) for warning deduplication (05-03)
 - Track session summary on running->stopped transition via useRef (05-03)
+- Exit codes: 0=success, 1=general error, 2=invalid usage, 64=not found, 65=already exists (06-01)
+- JSON errors go to stdout (not stderr) for consistent script parsing (06-01)
+- Empty results return exit 0 with data: [] (not error) (06-01)
+- JSON envelope includes timestamp and version metadata for debugging (06-01)
 
 ### Pending Todos
 
@@ -98,5 +103,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 05-03-PLAN.md (Threshold Alerts & Session Summary)
+Stopped at: Completed 06-01-PLAN.md (Exit Codes & JSON Output)
 Resume file: None
